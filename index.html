@@ -1,0 +1,73 @@
+<!doctype html>
+<meta charset="utf-8">
+
+<style media="screen">
+#text {
+  width: 25%;
+  float: left;
+  margin-top: 7%;
+  margin-left: 3%;
+}
+
+#viz {
+  width: 65%;
+  float: right;
+  margin: 0 auto;
+}
+</style>
+
+<script src="http://d3plus.org/js/d3.js"></script>
+<script src="http://d3plus.org/js/d3plus.js"></script>
+
+<div id="text">
+  <h2>Network</h2>
+  <p>By passing D3plus a list of node positions and connections, a Network can be created and data can be mapped to the size of each node.</p>
+  <a href="https://d3plus.org/examples/basic/9042919/">Networks on D3plus</a>
+</div>
+
+<div id="viz"></div>
+
+<script>
+  // create sample dataset
+  var sample_data = [
+    {"name": "alpha", "size": 10},
+    {"name": "beta", "size": 200},
+    {"name": "gamma", "size": 30},
+    {"name": "delta", "size": 26},
+    {"name": "epsilon", "size": 12},
+    {"name": "zeta", "size": 26},
+    {"name": "theta", "size": 11},
+    {"name": "eta", "size": 24}
+  ]
+  // create list of node positions
+  var positions = [
+    {"name": "alpha", "x": 0, "y": 15},
+    {"name": "beta", "x": 12, "y": 24},
+    {"name": "gamma", "x": 16, "y": 18},
+    {"name": "delta", "x": 26, "y": 21},
+    {"name": "epsilon", "x": 13, "y": 4},
+    {"name": "zeta", "x": 31, "y": 13},
+    {"name": "theta", "x": 19, "y": 8},
+    {"name": "eta", "x": 24, "y": 11}
+  ]
+  // create list of node connections
+  var connections = [
+    {"source": "alpha", "target": "beta"},
+    {"source": "alpha", "target": "gamma"},
+    {"source": "beta", "target": "delta"},
+    {"source": "beta", "target": "epsilon"},
+    {"source": "zeta", "target": "gamma"},
+    {"source": "theta", "target": "gamma"},
+    {"source": "eta", "target": "gamma"}
+  ]
+  // instantiate d3plus
+  var visualization = d3plus.viz()
+    .container("#viz")
+    .type("network")
+    .data(sample_data)
+    .nodes(positions)   // x and y position of nodes
+    .edges(connections) // list of node connections
+    .size("size")       // size
+    .id("name")         // name
+    .draw()             
+</script>
