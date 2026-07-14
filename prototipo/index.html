@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0d1117">
+<title>Guardianes del Control — Capítulo A</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel-2: #1c2330;
+    --borde: #30363d;
+    --texto: #e6edf3;
+    --tenue: #9aa4b2;
+    --azul: #1f6feb;
+    --naranja: #f0883e;
+    --verde: #2ea043;
+    --rojo: #da3633;
+    --amarillo: #d29922;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: #05070a; color: var(--texto);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; justify-content: center; min-height: 100vh; }
+
+  /* Marco tipo teléfono en pantallas anchas; ocupa todo en móvil */
+  .telefono {
+    width: 100%; max-width: 430px; min-height: 100vh;
+    background: var(--bg); display: flex; flex-direction: column;
+    position: relative; box-shadow: 0 0 60px rgba(0,0,0,.6);
+  }
+
+  header {
+    padding: 14px 16px 10px; background: var(--panel);
+    border-bottom: 1px solid var(--borde); position: sticky; top: 0; z-index: 10;
+  }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .marca { font-size: 12px; letter-spacing: .5px; color: var(--tenue); text-transform: uppercase; }
+  #cap-titulo { font-size: 15px; font-weight: 700; margin: 2px 0 0; }
+  #btn-reiniciar {
+    background: transparent; border: 1px solid var(--borde); color: var(--tenue);
+    border-radius: 8px; padding: 6px 8px; font-size: 12px; cursor: pointer; flex: none;
+  }
+  #paso-actual {
+    margin-top: 8px; font-size: 11px; font-weight: 700; color: var(--naranja);
+    text-transform: uppercase; letter-spacing: .6px;
+  }
+
+  .indicador { margin-top: 10px; }
+  .indicador-etq { display: flex; justify-content: space-between; font-size: 11px; color: var(--tenue); margin-bottom: 4px; }
+  .barra { height: 8px; background: #0a0e14; border-radius: 6px; overflow: hidden; border: 1px solid var(--borde); }
+  .fill { height: 100%; width: 50%; transition: width .5s ease, background .3s; border-radius: 6px; }
+  .fill.ok { background: linear-gradient(90deg,#238636,#2ea043); }
+  .fill.med { background: linear-gradient(90deg,#9e6a03,#d29922); }
+  .fill.bajo { background: linear-gradient(90deg,#a81f1c,#da3633); }
+
+  #app { flex: 1; padding: 16px; padding-bottom: 40px; overflow-y: auto; }
+
+  .card { background: var(--panel); border: 1px solid var(--borde); border-radius: 16px;
+    padding: 18px; margin-bottom: 14px; animation: aparece .35s ease; }
+  @keyframes aparece { from { opacity: 0; transform: translateY(8px);} to {opacity:1; transform:none;} }
+  h2 { font-size: 19px; margin: 0 0 10px; line-height: 1.25; }
+  .cuerpo { font-size: 15px; line-height: 1.55; color: #d6dde6; margin: 0 0 4px; }
+
+  .dialogo { margin-top: 14px; background: var(--panel-2); border-left: 3px solid var(--azul);
+    border-radius: 10px; padding: 12px; }
+  .dialogo-cabecera { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-weight: 700; color: #fff; flex: none; }
+  .dialogo-nombre { font-size: 13px; font-weight: 700; }
+  .dialogo-rol { font-size: 11px; color: var(--tenue); }
+  .dialogo-texto { font-size: 14px; line-height: 1.5; font-style: italic; color: #e6edf3; }
+
+  .btn { display: block; width: 100%; border-radius: 12px; padding: 14px 16px; font-size: 15px;
+    border: 1px solid var(--borde); background: var(--panel-2); color: var(--texto);
+    cursor: pointer; text-align: left; line-height: 1.4; transition: transform .08s, background .2s; }
+  .btn:active { transform: scale(.985); }
+  .btn.primario { background: var(--azul); border-color: var(--azul); color: #fff;
+    text-align: center; font-weight: 700; margin-top: 4px; }
+  .opciones, .items { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+  .opcion { position: relative; }
+  .inerte { opacity: .55; }
+  .elegida-ok { border-color: var(--verde); background: rgba(46,160,67,.14); opacity: 1; }
+  .elegida-mal { border-color: var(--rojo); background: rgba(218,54,51,.14); opacity: 1; }
+
+  .item { display: flex; align-items: flex-start; gap: 10px; background: var(--panel-2);
+    border: 1px solid var(--borde); border-radius: 12px; padding: 12px; font-size: 14px; cursor: pointer; }
+  .item input { width: 20px; height: 20px; margin-top: 1px; flex: none; accent-color: var(--naranja); }
+  .item-ok { border-color: var(--verde); }
+  .item-mal { border-color: var(--rojo); }
+  .item-nota { flex-basis: 100%; margin-top: 8px; font-size: 12px; line-height: 1.45;
+    padding-top: 8px; border-top: 1px dashed var(--borde); color: var(--tenue); }
+  .item-nota.es-mue { color: #7ee2a8; }
+  .item-nota.no-mue { color: #f0b072; }
+
+  .feedback { border-radius: 14px; padding: 14px; margin-top: 6px; animation: aparece .3s ease; }
+  .fb-ok { background: rgba(46,160,67,.12); border: 1px solid rgba(46,160,67,.5); }
+  .fb-mal { background: rgba(210,153,34,.12); border: 1px solid rgba(210,153,34,.5); }
+  .fb-titulo { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+  .fb-delta { font-size: 12px; color: var(--tenue); margin-bottom: 8px; font-weight: 700; }
+  .feedback p { font-size: 14px; line-height: 1.5; margin: 0 0 12px; }
+
+  .medalla { font-size: 56px; text-align: center; margin-bottom: 6px; }
+  .medalla.gris { filter: grayscale(1) opacity(.6); }
+  .resultado { display: flex; gap: 12px; justify-content: center; margin: 12px 0; }
+  .metrica { background: var(--panel-2); border: 1px solid var(--borde); border-radius: 12px;
+    padding: 12px 18px; text-align: center; min-width: 110px; }
+  .metrica span { font-size: 28px; font-weight: 800; display: block; }
+  .metrica small { font-size: 11px; color: var(--tenue); }
+  .insignia { text-align: center; background: rgba(210,153,34,.15); border: 1px solid var(--amarillo);
+    border-radius: 12px; padding: 10px; font-weight: 700; margin: 8px 0 12px; }
+  .prox { text-align: center; font-size: 12px; color: var(--tenue); margin-top: 12px; }
+</style>
+</head>
+<body>
+  <div class="telefono">
+    <header>
+      <div class="top">
+        <div>
+          <div class="marca">🛡️ Guardianes del Control</div>
+          <div id="cap-titulo">Capítulo A</div>
+        </div>
+        <button id="btn-reiniciar">Reiniciar</button>
+      </div>
+      <div id="paso-actual"></div>
+      <div class="indicador">
+        <div class="indicador-etq">
+          <span>Seguridad de la mina</span>
+          <span><b id="indicador-valor">50</b>/100</span>
+        </div>
+        <div class="barra"><div id="indicador-fill" class="fill med"></div></div>
+      </div>
+    </header>
+    <main id="app"></main>
+  </div>
+
+  <script src="capitulo-a.contenido.js"></script>
+  <script src="motor.js"></script>
+</body>
+</html>
