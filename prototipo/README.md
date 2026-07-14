@@ -17,14 +17,20 @@ distinta:
   nivel correcto, fijar con deslizadores la frecuencia de verificación de cada uno, y luego
   un **turno en vivo** donde hay que responder a las alertas a tiempo para mantener los
   medidores en verde.
+- **Capítulo D — Recorrida de Terreno** (Pasos 7–9): `capitulo-d.html`.
+  **Simulador de inspección en primera persona**: visitar estaciones y, en cada una,
+  *observar* tocando puntos de la escena y preguntando al trabajador, emitir un *veredicto*
+  (Efectivo/Degradado/Ausente) según la evidencia y elegir la *respuesta* correcta (jerarquía
+  del Paso 9); al final se envía el *reporte* de verificación (Paso 8).
 
 Cada capítulo usa una **técnica de comunicación distinta** a propósito (narrativa
-ramificada · escape room · simulación) para mostrar variedad de recursos de aprendizaje.
+ramificada · escape room · simulación dashboard · inspección en terreno) para mostrar
+variedad de recursos de aprendizaje. Con los cuatro se cubre el proceso completo de 9 pasos.
 
 ## Cómo probarlo
 
-Abre `index.html` (Cap. A), `capitulo-b.html` (Cap. B) o `capitulo-c.html` (Cap. C) en
-cualquier navegador (doble clic; funciona offline, sin servidor). Diseñado en formato
+Abre `index.html` (A), `capitulo-b.html` (B), `capitulo-c.html` (C) o `capitulo-d.html` (D)
+en cualquier navegador (doble clic; funciona offline, sin servidor). Diseñado en formato
 vertical de teléfono; en escritorio se muestra dentro de un marco tipo móvil.
 
 Versiones `*.standalone.html`: un solo archivo autocontenido de cada capítulo, para
