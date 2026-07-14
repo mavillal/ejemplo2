@@ -238,6 +238,20 @@
 
   .confeti { position: absolute; inset: 0; pointer-events: none; z-index: 40; }
 
+  /* Diálogo de confirmación propio (sustituye a confirm() nativo) */
+  .modal-ov { position: absolute; inset: 0; z-index: 60; display: flex; align-items: center;
+    justify-content: center; padding: 24px; background: rgba(5,7,14,.6);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); opacity: 0; transition: opacity .2s; }
+  .modal-ov.visible { opacity: 1; }
+  .modal { width: 100%; max-width: 320px; background: linear-gradient(180deg, var(--panel), #111827);
+    border: 1px solid var(--border2); border-radius: 20px; padding: 20px; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6); transform: scale(.92); transition: transform .2s; }
+  .modal-ov.visible .modal { transform: scale(1); }
+  .modal h3 { margin: 0 0 8px; font-size: 18px; font-weight: 800; }
+  .modal p { margin: 0 0 18px; font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+  .modal-btns { display: flex; gap: 10px; }
+  .modal-btns .btn { justify-content: center; font-weight: 700; }
+
   @media (prefers-reduced-motion: reduce) {
     *, #app > * { animation: none !important; transition: none !important; }
   }

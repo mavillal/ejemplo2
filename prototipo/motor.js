@@ -198,6 +198,36 @@
     </g>
   </svg>`;
 
+  // Escena: consecuencia positiva (sistema sólido / camino correcto)
+  S.exito = () => `<svg viewBox="0 0 400 210" preserveAspectRatio="xMidYMid slice">
+    <defs>${sky("se", "#0E2A2A", "#10233A")}
+      <radialGradient id="seg" cx="50%" cy="45%" r="55%"><stop offset="0%" stop-color="#2DD4BF" stop-opacity=".5"/><stop offset="100%" stop-color="#2DD4BF" stop-opacity="0"/></radialGradient></defs>
+    <rect width="400" height="210" fill="url(#se)"/>
+    <circle cx="200" cy="100" r="120" fill="url(#seg)"/>
+    <polyline points="60,150 130,150 175,95 230,120 300,55 350,55" fill="none" stroke="#2DD4BF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M330 55 l20 0 l0 20" fill="none" stroke="#2DD4BF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <g transform="translate(200 100)">
+      <circle r="42" fill="#10233A" stroke="#2DD4BF" stroke-width="4"/>
+      <path d="M-18 2 l12 14 l26 -32" fill="none" stroke="#2DD4BF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </svg>`;
+
+  // Escena: consecuencia negativa / traba (camino difícil, sin respaldo)
+  S.traba = () => `<svg viewBox="0 0 400 210" preserveAspectRatio="xMidYMid slice">
+    <rect width="400" height="210" fill="#20161A"/>
+    <rect width="400" height="210" fill="#101A33" opacity=".5"/>
+    <!-- barrera a rayas -->
+    <g transform="translate(0 118)">
+      <rect x="40" y="0" width="320" height="20" rx="4" fill="#1A2338" stroke="#33456B" stroke-width="1.5"/>
+      ${Array.from({length:8},(_, i)=>`<path d="M${52+i*40} 2 l16 0 l-16 16 l-6 0z" fill="#FF8A3D"/>`).join("")}
+      <rect x="60" y="20" width="8" height="52" fill="#33456B"/><rect x="332" y="20" width="8" height="52" fill="#33456B"/>
+    </g>
+    <!-- cono -->
+    <g transform="translate(200 150)"><path d="M0 -34 L16 26 H-16z" fill="#FF6B1A"/><rect x="-20" y="26" width="40" height="8" rx="3" fill="#E0730A"/><rect x="-9" y="-8" width="18" height="6" fill="#F4EEE6"/><rect x="-12" y="4" width="24" height="6" fill="#F4EEE6"/></g>
+    <!-- alerta -->
+    <g transform="translate(300 70)"><path d="M0 -20 L18 14 H-18z" fill="none" stroke="#FFC53D" stroke-width="3" stroke-linejoin="round"/><rect x="-2.4" y="-10" width="4.8" height="12" rx="2.4" fill="#FFC53D"/><circle cx="0" cy="7" r="2.6" fill="#FFC53D"/></g>
+  </svg>`;
+
   // Iconos de ítems MUE (24x24)
   const IC = {
     camion: `<path d="M2 15 h13 v-5 l3 0 3 4 v6 q0 1 -1 1 h-2" stroke="#FF8A3D" stroke-width="1.8" fill="none" stroke-linejoin="round"/><path d="M2 8 h13 v9 h-13z" fill="#FF8A3D" opacity=".25"/><circle cx="7" cy="19" r="2.2" fill="#FF8A3D"/><circle cx="18" cy="19" r="2.2" fill="#FF8A3D"/>`,
@@ -267,7 +297,10 @@
   }
 
   /* ============================ NAVEGACIÓN ============================ */
-  const ir = (id) => { estado.nodo = id; guardar(); render(); };
+  // Resuelve un "siguiente" que puede ser string o función(estado) => id.
+  // Es la base de la narrativa ramificada y de las consecuencias diferidas.
+  const sig = (v) => (typeof v === "function" ? v(estado) : v);
+  const ir = (id) => { estado.nodo = sig(id); guardar(); render(); };
 
   function render() {
     const nodo = cap.nodos[estado.nodo];
@@ -362,7 +395,9 @@
            <button class="btn primario" id="seguir">Continuar <span>▸</span></button>`;
         app.appendChild(fb);
         fb.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
-        document.getElementById("seguir").onclick = () => ir(nodo.siguiente);
+        // RAMIFICACIÓN: cada opción define su propio camino (o cae al del nodo).
+        const destino = op.siguiente != null ? op.siguiente : nodo.siguiente;
+        document.getElementById("seguir").onclick = () => ir(destino);
       };
     });
   }
@@ -452,33 +487,41 @@
   }
 
   /* -------------------------------- FINAL ------------------------------- */
+  // Tres variantes de desenlace según el camino tomado: exito | mixto | fallo.
+  const HEROES = {
+    exito: { col: "#2DD4BF", ico: `<path d="M28 46 l8 9 l18 -22" stroke="#2DD4BF" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` },
+    mixto: { col: "#FFC53D", ico: `<rect x="36.6" y="30" width="6.8" height="26" rx="3.4" fill="#FFC53D"/><circle cx="40" cy="66" r="4" fill="#FFC53D"/>` },
+    fallo: { col: "#FF5A5F", ico: `<path d="M31 37 l18 18 M49 37 l-18 18" stroke="#FF5A5F" stroke-width="6" fill="none" stroke-linecap="round"/>` }
+  };
   function rFinal(nodo) {
     const v = clamp(estado.indicador);
-    const aprob = v >= nodo.umbralAprobacion;
+    const variante = nodo.variante || "exito";
+    const h = HEROES[variante] || HEROES.exito;
+    const celebra = variante === "exito";
     app.innerHTML = card(`
-      <div class="final-hero ${aprob ? "" : "gris"}">
-        <div class="final-glow"></div>
+      <div class="final-hero var-${variante}">
+        <div class="final-glow" style="background:radial-gradient(circle, ${h.col}66, transparent 65%)"></div>
         <svg viewBox="0 0 80 92" width="104" height="120" class="final-escudo">
-          <defs><linearGradient id="fg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFD98A"/><stop offset="100%" stop-color="#FF6B1A"/></linearGradient></defs>
-          <path d="M40 3 L74 16 V40 Q74 74 40 89 Q6 74 6 40 V16z" fill="#141C2E" stroke="url(#fg)" stroke-width="3"/>
-          <path d="M28 46 l8 9 l18 -22" stroke="url(#fg)" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M40 3 L74 16 V40 Q74 74 40 89 Q6 74 6 40 V16z" fill="#141C2E" stroke="${h.col}" stroke-width="3"/>
+          ${h.ico}
         </svg>
       </div>
       <div class="card-pad">
         <h2 style="text-align:center">${esc(nodo.titulo)}</h2>
         <div class="resultado">
           <div class="metrica"><b>${v}</b><small>Seguridad</small></div>
-          <div class="metrica"><b>Nv ${nivel(estado.xp)}</b><small>${estado.xp} XP</small></div>
-          <div class="metrica"><b>${estado.aciertosEval}/${estado.totalEval}</b><small>Evaluación</small></div>
+          <div class="metrica"><b>Nv ${nivel(estado.xp)}</b><small>Nivel</small></div>
+          <div class="metrica"><b>${estado.xp}</b><small>XP total</small></div>
         </div>
-        ${aprob ? `<div class="insignia"><span class="ins-medalla">🏅</span> Insignia obtenida<b>${esc(nodo.insignia)}</b></div>` : ""}
+        ${nodo.insignia ? `<div class="insignia"><span class="ins-medalla">🏅</span> Insignia obtenida<b>${esc(nodo.insignia)}</b></div>` : ""}
         <p class="cuerpo">${esc(nodo.cuerpo)}</p>
-        ${bloqueDialogo(nodo.persona, aprob ? nodo.dialogoAlto : nodo.dialogoBajo)}
+        ${bloqueDialogo(nodo.persona, nodo.dialogo)}
       </div>`, "con-escena") +
-      `<button class="btn primario" id="reiniciar-final">Volver a jugar</button>
-       <div class="prox">🔒 Próximamente · Capítulo B — «Del bowtie al control crítico»</div>`;
-    document.getElementById("reiniciar-final").onclick = reiniciar;
-    if (aprob && !reduce) confeti();
+      `<button class="btn primario" id="reiniciar-final">${variante === "fallo" ? "Reintentar el capítulo" : "Volver a jugar"}</button>
+       ${variante === "fallo" ? "" : `<div class="prox">🔒 Próximamente · Capítulo B — «Del bowtie al control crítico»</div>`}`;
+    // Reinicio directo y garantizado (sin confirm() nativo, que el hosting bloquea).
+    document.getElementById("reiniciar-final").onclick = reiniciarDirecto;
+    if (celebra && !reduce) confeti();
   }
 
   /* ------------------------------ CONFETI ------------------------------- */
@@ -505,10 +548,29 @@
     })();
   }
 
-  function reiniciar() {
-    if (!confirm("¿Reiniciar el capítulo desde el principio?")) return;
-    localStorage.removeItem(CLAVE);
+  function reiniciarDirecto() {
+    try { localStorage.removeItem(CLAVE); } catch (e) {}
     estado = nuevoEstado(); guardar(); render();
+  }
+
+  // Diálogo de confirmación propio (no usamos confirm() nativo: el iframe del
+  // hosting lo bloquea, por eso antes el botón "no hacía nada").
+  function reiniciar() {
+    const ov = document.createElement("div");
+    ov.className = "modal-ov";
+    ov.innerHTML = `<div class="modal">
+        <h3>¿Reiniciar el capítulo?</h3>
+        <p>Perderás el progreso y las decisiones de esta partida.</p>
+        <div class="modal-btns">
+          <button class="btn" id="m-no">Cancelar</button>
+          <button class="btn primario" id="m-si">Reiniciar</button>
+        </div></div>`;
+    document.querySelector(".telefono").appendChild(ov);
+    requestAnimationFrame(() => ov.classList.add("visible"));
+    const cerrar = () => ov.remove();
+    ov.addEventListener("click", (e) => { if (e.target === ov) cerrar(); });
+    ov.querySelector("#m-no").onclick = cerrar;
+    ov.querySelector("#m-si").onclick = () => { cerrar(); reiniciarDirecto(); };
   }
 
   render();

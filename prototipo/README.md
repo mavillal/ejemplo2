@@ -12,13 +12,23 @@ marco tipo móvil.
 
 ## Qué demuestra
 
+- **Narrativa ramificada (árbol de decisiones):** cada opción puede llevar a una escena o
+  pregunta distinta. En el Paso 1, elegir «con patrocinio» o «sin patrocinio» abre caminos
+  diferentes con preguntas propias, y hay **consecuencias diferidas**: descuidar el
+  liderazgo temprano cambia el desenlace más adelante. El capítulo tiene **tres finales
+  distintos** (éxito / correcto pero cuesta arriba / fallo). En el contenido, el campo
+  `siguiente` de cada opción define su camino, y puede ser una función que decide según las
+  banderas acumuladas (`estado.banderas`).
 - **Arquitectura de contenido desacoplado** (§7 del GDD): el contenido narrativo vive en
   `capitulo-a.contenido.js` como un grafo de nodos editable por el diseñador instruccional;
-  `motor.js` lo interpreta. Se puede cambiar el guion sin tocar el código del motor.
+  `motor.js` lo interpreta. Se puede cambiar el guion o el árbol sin tocar el motor.
+- **Estética de juego móvil:** portada cinematográfica, avatar ilustrado de la Ing. Rivas
+  con rostro visible, HUD con nivel/XP y puntaje animados, ilustraciones SVG por escena,
+  iconos en el minijuego de MUEs, y pantallas de desenlace con confeti, escudo y medalla.
+  Toda la gráfica es **SVG incrustado** (nítida, liviana, sin recursos externos).
 - **Mecánicas del GDD**: decisiones con consecuencias, retroalimentación formativa de la
-  mentora (Ing. Rivas), el minijuego de identificar MUEs (Paso 2), evaluación de cierre,
-  el «Indicador de Seguridad de la Mina» como puntuación, insignia por competencia y
-  guardado automático (offline-first, vía `localStorage`).
+  mentora, minijuego de identificar MUEs (Paso 2), el «Indicador de Seguridad de la Mina»
+  como puntuación, insignia por competencia y guardado automático (offline, `localStorage`).
 
 ## Contenido cubierto (ICMM 2026)
 

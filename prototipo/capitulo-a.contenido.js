@@ -1,11 +1,13 @@
 /*
- * Contenido del Capítulo A — "Fundamentos y planificación"
- * Pasos 1 y 2 del proceso CCM de la guía ICMM 2026.
- *   Paso 1 — Planificar el proceso (gobernanza, liderazgo, equipo, alcance)
- *   Paso 2 — Identificar Eventos No Deseados Materiales (MUEs)
+ * Contenido del Capítulo A — "Fundamentos y planificación" (Pasos 1 y 2, ICMM 2026)
  *
- * Formato: grafo de nodos interpretado por el motor (motor.js).
- * Campo "ilustracion": id de la ilustración SVG que dibuja el motor.
+ * NARRATIVA RAMIFICADA (árbol de decisiones): cada opción puede definir su propio
+ * "siguiente", llevando al jugador por caminos distintos. Las consecuencias se
+ * arrastran mediante banderas (estado.banderas) que un nodo posterior consulta.
+ *
+ * "siguiente" puede ser:
+ *   - un string (id de nodo), o
+ *   - una función(estado) => id   (para consecuencias diferidas según el camino)
  *
  * Tipos de nodo: portada | escena | decision | seleccion | evaluacion | final
  */
@@ -31,8 +33,9 @@ window.CAPITULO_A = {
       capitulo: "Capítulo A — Fundamentos y planificación",
       persona: "rivas",
       dialogo:
-        "Soy la Ing. Rivas. Juntos vamos a blindar Mina Cerro Alto contra los " +
-        "eventos que pueden costar vidas. ¿List@ para empezar?",
+        "Soy la Ing. Rivas. Cada decisión que tomes cambia el rumbo de la faena. " +
+        "Juntos vamos a blindar Mina Cerro Alto contra los eventos que pueden costar " +
+        "vidas. ¿List@ para empezar?",
       boton: "Comenzar capítulo",
       siguiente: "intro"
     },
@@ -44,10 +47,10 @@ window.CAPITULO_A = {
       titulo: "Mina Cerro Alto",
       cuerpo:
         "Llegas como responsable de implementar la Gestión de Controles Críticos " +
-        "(CCM). Hace un mes, un camión de acarreo casi arrolla a un trabajador a " +
-        "pie: un aviso de que la faena necesita blindar sus riesgos mortales.\n\n" +
-        "Tu misión en este capítulo: sentar las bases del proceso (Paso 1) e " +
-        "identificar los Eventos No Deseados Materiales (Paso 2).",
+        "(CCM). Hace un mes, un camión de acarreo casi arrolla a un trabajador a pie: " +
+        "un aviso de que la faena necesita blindar sus riesgos mortales.\n\n" +
+        "Aquí no hay un guion único: tus decisiones abren caminos distintos y sus " +
+        "consecuencias te alcanzarán más adelante.",
       persona: "rivas",
       dialogo:
         "Antes de elegir un solo control, hay que construir los cimientos. La guía " +
@@ -55,7 +58,9 @@ window.CAPITULO_A = {
       siguiente: "p1_sponsor"
     },
 
-    // ------------------------------------------------ PASO 1: LIDERAZGO
+    // ============================================================
+    // PASO 1 — DECISIÓN RAÍZ: el patrocinio del liderazgo
+    // ============================================================
     p1_sponsor: {
       tipo: "decision",
       paso: "Paso 1 · Planificar el proceso",
@@ -69,101 +74,189 @@ window.CAPITULO_A = {
           texto:
             "Pedir que la gerencia patrocine visiblemente el programa y asigne " +
             "recursos y tiempo del personal.",
-          indicador: +12, xp: 20, bandera: "patrocinio", correcta: true,
+          indicador: +12, xp: 20, bandera: "apoyo", correcta: true,
           feedback:
             "Correcto. La guía 2026 refuerza que el compromiso visible del liderazgo " +
-            "y una gobernanza clara son la primera condición de éxito. Sin recursos ni " +
-            "tiempo asignado, el proceso queda en buenas intenciones."
+            "y una gobernanza clara son la primera condición de éxito.",
+          siguiente: "c_apoyo_si"
         },
         {
           texto:
             "Arrancar tú solo/a con lo que haya, para no molestar a la gerencia, y " +
             "mostrar resultados después.",
-          indicador: -8, xp: 5, bandera: "sin_patrocinio",
+          indicador: -8, xp: 5,
           feedback:
-            "Riesgo alto. Sin patrocinio ni gobernanza formal, más adelante te faltará " +
-            "autoridad para asignar dueños de control y detener tareas. Este atajo se " +
-            "paga en capítulos posteriores."
+            "Camino cuesta arriba. Sin patrocinio ni gobernanza, más adelante te " +
+            "faltará autoridad. Pero aún puedes intentar revertirlo.",
+          siguiente: "c_apoyo_no"
         },
         {
           texto: "Delegar todo el programa al área de Seguridad, porque 'es su tema'.",
-          indicador: -10, xp: 5, bandera: "sin_patrocinio",
+          indicador: -10, xp: 5,
           feedback:
-            "Error frecuente. El CCM no es 'del área de seguridad': es de la línea " +
-            "operativa. Aislarlo en Seguridad debilita la rendición de cuentas."
+            "Error frecuente. El CCM es de la línea operativa, no 'de Seguridad'. " +
+            "Aislarlo debilita la rendición de cuentas.",
+          siguiente: "c_apoyo_no"
         }
-      ],
-      siguiente: "p1_equipo"
+      ]
     },
 
-    p1_equipo: {
+    // ---- Consecuencia CAMINO A: con apoyo → pregunta "formar equipo" ----
+    c_apoyo_si: {
+      tipo: "escena",
+      paso: "Paso 1 · Camino: con respaldo",
+      ilustracion: "exito",
+      titulo: "La gerencia se compromete",
+      cuerpo:
+        "Ortiz firma el patrocinio, asigna presupuesto y libera tiempo del personal. " +
+        "Tienes autoridad y recursos para avanzar con fuerza.",
+      persona: "rivas",
+      dialogo: "Con el liderazgo detrás, ahora sí: armemos el equipo correcto.",
+      siguiente: "p1_equipo_apoyo"
+    },
+
+    p1_equipo_apoyo: {
       tipo: "decision",
-      paso: "Paso 1 · Planificar el proceso",
+      paso: "Paso 1 · Con respaldo",
       ilustracion: "equipo",
       titulo: "Formar el equipo",
-      cuerpo: "Debes armar el equipo que llevará adelante el proceso. ¿A quiénes convocas?",
+      cuerpo:
+        "Con el respaldo asegurado, armas el equipo que llevará el proceso. " +
+        "¿A quiénes convocas?",
       opciones: [
         {
           texto:
-            "Un equipo multidisciplinario: operaciones, mantenimiento, seguridad y " +
+            "Equipo multidisciplinario: operaciones, mantenimiento, seguridad y " +
             "trabajadores de primera línea con experiencia en la tarea.",
-          indicador: +12, xp: 20, bandera: "equipo_linea", correcta: true,
+          indicador: +12, xp: 20, bandera: "equipo", correcta: true,
           feedback:
-            "Correcto. La guía 2026 pone énfasis en el involucramiento de la primera " +
-            "línea: quienes ejecutan la tarea conocen los controles reales, no los que " +
-            "están 'en el papel'."
+            "Correcto. La guía 2026 enfatiza el involucramiento de la primera línea: " +
+            "quienes ejecutan la tarea conocen los controles reales.",
+          siguiente: "p1_alcance"
         },
         {
-          texto: "Solo ingenieros y jefaturas: son quienes toman las decisiones técnicas.",
-          indicador: -6, xp: 5,
+          texto: "Solo ingenieros y jefaturas: ellos toman las decisiones técnicas.",
+          indicador: -6, xp: 8,
           feedback:
-            "Incompleto. Sin la voz de la primera línea corres el riesgo de diseñar " +
-            "controles que no reflejan cómo se hace realmente el trabajo."
+            "Incompleto. Sin la voz de la primera línea diseñarás controles que no " +
+            "reflejan cómo se hace realmente el trabajo.",
+          siguiente: "p1_alcance"
         },
         {
           texto: "Contratar una consultora para que lo haga íntegramente por fuera.",
-          indicador: -8, xp: 5,
+          indicador: -8, xp: 8,
           feedback:
-            "Débil. Una consultora puede facilitar, pero si el conocimiento y la " +
-            "responsabilidad no quedan en la operación, el sistema no se sostiene."
+            "Débil. Si el conocimiento y la responsabilidad no quedan en la operación, " +
+            "el sistema no se sostiene.",
+          siguiente: "p1_alcance"
         }
-      ],
+      ]
+    },
+
+    // ---- Consecuencia CAMINO B: sin apoyo → pregunta DISTINTA (recuperar) ----
+    c_apoyo_no: {
+      tipo: "escena",
+      paso: "Paso 1 · Camino: sin respaldo",
+      ilustracion: "traba",
+      titulo: "Avanzas sin red",
+      cuerpo:
+        "Sin patrocinio formal, arrancas con lo justo: ni presupuesto claro ni tiempo " +
+        "liberado del personal. La línea operativa te ve como 'un tema de Seguridad " +
+        "más'. Este camino será más difícil.",
+      persona: "rivas",
+      dialogo:
+        "No es el fin del mundo, pero ojo: sin liderazgo, cuando toque DETENER una " +
+        "tarea te va a faltar autoridad. ¿Cómo procedes?",
+      siguiente: "p1_recuperar"
+    },
+
+    p1_recuperar: {
+      tipo: "decision",
+      paso: "Paso 1 · Sin respaldo",
+      ilustracion: "traba",
+      titulo: "Recuperar el rumbo",
+      cuerpo:
+        "En la primera reunión te falta peso. Tienes una oportunidad de enderezar el " +
+        "proceso. ¿Qué haces?",
+      opciones: [
+        {
+          texto:
+            "Documentar los riesgos mortales de la faena y volver a la gerencia con " +
+            "evidencia para conseguir el patrocinio que faltó.",
+          indicador: +14, xp: 22, bandera: "apoyo", correcta: true,
+          feedback:
+            "Bien recuperado. Con evidencia del potencial de fatalidad, Ortiz " +
+            "reacciona y respalda el programa. Vuelves al camino sólido.",
+          siguiente: "c_recupera_ok"
+        },
+        {
+          texto:
+            "Avanzar igual, sin involucrar a la línea, para mostrar algo rápido.",
+          indicador: -8, xp: 6,
+          feedback:
+            "Sigues sin cimientos. Mostrar 'algo' no construye un sistema que aguante. " +
+            "La deuda de liderazgo te seguirá.",
+          siguiente: "p1_alcance"
+        },
+        {
+          texto: "Formar el equipo solo con el área de Seguridad, que es lo que tienes.",
+          indicador: -6, xp: 6,
+          feedback:
+            "Comprensible, pero refuerza el error: el CCM queda aislado de operaciones, " +
+            "justo donde ocurren los eventos mortales.",
+          siguiente: "p1_alcance"
+        }
+      ]
+    },
+
+    c_recupera_ok: {
+      tipo: "escena",
+      paso: "Paso 1 · Rumbo recuperado",
+      ilustracion: "exito",
+      titulo: "Reviertes la situación",
+      cuerpo:
+        "La evidencia de riesgos mortales cambia la conversación. Ortiz asigna " +
+        "recursos y respalda el programa: recuperas la autoridad que faltaba.",
+      persona: "rivas",
+      dialogo: "Así se hace. Nunca es tarde para poner el liderazgo donde corresponde.",
       siguiente: "p1_alcance"
     },
 
+    // ---- Reconvergencia: definir alcance (todos los caminos pasan por aquí) ----
     p1_alcance: {
       tipo: "escena",
       paso: "Paso 1 · Planificar el proceso",
       ilustracion: "alcance",
       titulo: "Definir el alcance",
       cuerpo:
-        "Con el equipo formado, definen el alcance: se enfocarán en los riesgos con " +
-        "potencial de consecuencia catastrófica (fatalidades o eventos mayores), no " +
-        "en todos los riesgos de la operación.",
+        "Defines el alcance: el CCM se enfocará en los riesgos con potencial de " +
+        "consecuencia catastrófica (fatalidades o eventos mayores), no en todos los " +
+        "riesgos de la operación.",
       persona: "rivas",
       dialogo:
-        "El CCM no reemplaza tu sistema de gestión de riesgos: se concentra en los " +
-        "pocos eventos que pueden matar o destruir. Eso nos lleva al Paso 2.",
+        "El CCM no reemplaza tu sistema de riesgos: se concentra en los pocos eventos " +
+        "que pueden matar o destruir. Eso nos lleva al Paso 2.",
       siguiente: "p2_intro"
     },
 
-    // ------------------------------------------- PASO 2: IDENTIFICAR MUEs
+    // ============================================================
+    // PASO 2 — IDENTIFICAR MUEs
+    // ============================================================
     p2_intro: {
       tipo: "escena",
       paso: "Paso 2 · Identificar MUEs",
       ilustracion: "mues",
       titulo: "¿Qué es un MUE?",
       cuerpo:
-        "Un Evento No Deseado Material (MUE) es un evento con potencial de " +
-        "consecuencia MUY GRAVE: fatalidad o daño catastrófico.\n\n" +
+        "Un Evento No Deseado Material (MUE) es un evento con potencial de consecuencia " +
+        "MUY GRAVE: fatalidad o daño catastrófico.\n\n" +
         "OJO: no es lo mismo que un riesgo frecuente. Algo puede pasar seguido y aun " +
         "así NO ser un MUE si su peor consecuencia es menor. Y algo raro puede ser un " +
         "MUE si, cuando ocurre, mata.",
       persona: "rivas",
       dialogo:
-        "Este es el paso que más equivocan las faenas. Si priorizas mal aquí, todo lo " +
-        "que construyas encima queda torcido. Concéntrate en la CONSECUENCIA, no en la " +
-        "frecuencia.",
+        "Este es el paso que más equivocan las faenas. Concéntrate en la CONSECUENCIA, " +
+        "no en la frecuencia.",
       siguiente: "p2_seleccion"
     },
 
@@ -202,15 +295,15 @@ window.CAPITULO_A = {
       siguiente: "p2_ranking"
     },
 
+    // ---- DECISIÓN que ramifica el desenlace + CONSECUENCIA DIFERIDA del Paso 1 ----
     p2_ranking: {
       tipo: "decision",
       paso: "Paso 2 · Identificar MUEs",
       ilustracion: "camion_persona",
-      titulo: "Priorizar",
+      titulo: "Priorizar bajo presión",
       cuerpo:
-        "El equipo tiene recursos limitados para empezar. El Superintendente Delgado " +
-        "presiona: «Partamos por lo que más se reporta, los cortes de mano; hay decenas " +
-        "al mes». ¿Qué respondes?",
+        "El Superintendente Delgado presiona: «Partamos por lo que más se reporta, los " +
+        "cortes de mano; hay decenas al mes». ¿Qué respondes?",
       opciones: [
         {
           texto:
@@ -219,80 +312,80 @@ window.CAPITULO_A = {
           indicador: +10, xp: 20, correcta: true,
           feedback:
             "Correcto. CCM se ordena por consecuencia potencial, no por número de " +
-            "reportes. Los cortes importan, pero no son el foco de los controles críticos."
+            "reportes. Ahora veremos qué tan firme quedó tu decisión.",
+          // Consecuencia DIFERIDA: depende de si aseguraste el liderazgo en el Paso 1
+          siguiente: function (estado) {
+            return estado.banderas.apoyo ? "final_bien" : "final_sinapoyo";
+          }
         },
         {
-          texto: "Ceder y empezar por los cortes de mano, para mostrar cifras que bajen rápido.",
-          indicador: -10, xp: 5,
+          texto:
+            "Ceder y empezar por los cortes de mano, para mostrar cifras que bajen " +
+            "rápido.",
+          indicador: -12, xp: 4,
           feedback:
-            "Trampa clásica. Reducir la estadística de lesiones menores no reduce el " +
-            "riesgo de fatalidad. Es el error que la guía 2026 busca corregir."
+            "Cediste a la presión de producción. Reducir lesiones menores no reduce el " +
+            "riesgo de fatalidad… y el destino de la faena lo confirmará.",
+          siguiente: "final_incidente"
         }
-      ],
-      siguiente: "eval_intro"
+      ]
     },
 
-    // --------------------------------------------- EVALUACIÓN DE CIERRE
-    eval_intro: {
-      tipo: "escena",
-      ilustracion: "evaluacion",
-      titulo: "Caso integrador",
+    // ============================================================
+    // DESENLACES RAMIFICADOS (tres finales distintos)
+    // ============================================================
+    final_bien: {
+      tipo: "final", variante: "exito",
+      ilustracion: "exito",
+      titulo: "¡Faena blindada!",
       cuerpo:
-        "Para cerrar el capítulo, dos preguntas rápidas que integran lo visto. " +
-        "Respóndelas bien para consolidar las bases del sistema.",
-      siguiente: "eval_1"
-    },
-
-    eval_1: {
-      tipo: "evaluacion",
-      titulo: "Pregunta 1 de 2",
-      cuerpo: "¿Cuál es el criterio que define a un Evento No Deseado Material (MUE)?",
-      opciones: [
-        { texto: "Que ocurra con mucha frecuencia en la operación.", correcta: false },
-        { texto: "Que tenga potencial de consecuencia catastrófica (fatalidad o daño mayor).", correcta: true },
-        { texto: "Que sea difícil y costoso de controlar.", correcta: false },
-        { texto: "Que esté reportado en el sistema de incidentes.", correcta: false }
-      ],
-      feedbackOk: "Exacto: lo define la CONSECUENCIA potencial, no la frecuencia ni el costo.",
-      feedbackNo: "Recuerda: un MUE se define por su potencial de consecuencia catastrófica.",
-      siguiente: "eval_2"
-    },
-
-    eval_2: {
-      tipo: "evaluacion",
-      titulo: "Pregunta 2 de 2",
-      cuerpo:
-        "Según la edición 2026, ¿cuál es la primera condición para que el proceso CCM " +
-        "funcione?",
-      opciones: [
-        { texto: "Comprar un software de gestión de controles.", correcta: false },
-        { texto: "Que el área de Seguridad se haga cargo en exclusiva.", correcta: false },
-        { texto: "Compromiso visible del liderazgo y gobernanza clara.", correcta: true },
-        { texto: "Tener el mayor número posible de controles críticos.", correcta: false }
-      ],
-      feedbackOk: "Correcto. Liderazgo y gobernanza son los cimientos del sistema.",
-      feedbackNo: "La base es el liderazgo y la gobernanza, no la tecnología ni delegar en Seguridad.",
-      siguiente: "final"
-    },
-
-    // ------------------------------------------------------------ FINAL
-    final: {
-      tipo: "final",
-      titulo: "¡Capítulo A completado!",
-      cuerpo:
-        "Sentaste las bases: aseguraste liderazgo, formaste un equipo con la primera " +
-        "línea, definiste el alcance en lo catastrófico e identificaste los MUEs de " +
-        "Cerro Alto.\n\nEn el Capítulo B pasarás del riesgo al control: construirás el " +
-        "diagrama de corbatín (bowtie) y seleccionarás los controles CRÍTICOS.",
+        "Semanas después, el sistema CCM está en pie: liderazgo comprometido, equipo " +
+        "con la primera línea y los MUEs correctamente priorizados. Cuando un camión " +
+        "invade una zona de tránsito peatonal, el control crítico funciona y se evita " +
+        "la tragedia.\n\nEn el Capítulo B pasarás del riesgo al control: el diagrama de " +
+        "corbatín (bowtie) y la selección de controles CRÍTICOS.",
       persona: "rivas",
-      dialogoAlto:
-        "Bases sólidas. Con este criterio, el resto del sistema se va a sostener. " +
-        "Nos vemos en el bowtie.",
-      dialogoBajo:
-        "Terminamos, pero repasa el criterio de MUE y el rol del liderazgo antes de " +
-        "seguir: si esto queda flojo, lo demás se tuerce.",
-      insignia: "Analista de MUEs",
+      dialogo:
+        "Camino impecable: cimientos sólidos y foco en lo que mata. Así se sostiene un " +
+        "sistema. Nos vemos en el bowtie.",
+      insignia: "Guardián de Cimientos",
       umbralAprobacion: 65
+    },
+
+    final_sinapoyo: {
+      tipo: "final", variante: "mixto",
+      ilustracion: "traba",
+      titulo: "Lo correcto, cuesta arriba",
+      cuerpo:
+        "Priorizaste bien los MUEs, pero la deuda del Paso 1 te alcanza: sin patrocinio " +
+        "firme del liderazgo, cuando hubo que DETENER una tarea riesgosa te faltó " +
+        "autoridad y la orden llegó tarde. Aprendiste en carne propia por qué la guía " +
+        "2026 pone el liderazgo primero.\n\nEn el Capítulo B pasarás del riesgo al " +
+        "control: el bowtie y la selección de controles CRÍTICOS.",
+      persona: "rivas",
+      dialogo:
+        "Tu criterio de riesgo fue bueno. La lección: sin liderazgo, hasta la decisión " +
+        "correcta pierde fuerza. En el próximo capítulo lo tendremos en cuenta.",
+      insignia: "Analista de MUEs",
+      umbralAprobacion: 55
+    },
+
+    final_incidente: {
+      tipo: "final", variante: "fallo",
+      ilustracion: "camion_persona",
+      titulo: "Una lección amarga",
+      cuerpo:
+        "Enfocaste el esfuerzo en los cortes de mano y las cifras menores bajaron. Pero " +
+        "los riesgos mortales quedaron sin controles críticos. Semanas después, el mismo " +
+        "escenario del inicio se repite: un camión de acarreo y un trabajador a pie, esta " +
+        "vez sin nada que lo frene a tiempo.\n\nEs momento de volver a empezar y ordenar " +
+        "el CCM por CONSECUENCIA, no por frecuencia.",
+      persona: "rivas",
+      dialogo:
+        "Duele, pero es la lección central: reducir lo frecuente no salva vidas si " +
+        "dejas descubierto lo que mata. Repasemos y volvamos a intentarlo.",
+      insignia: null,
+      umbralAprobacion: 200 // nunca aprueba: es el desenlace de fallo
     }
   }
 };

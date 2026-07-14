@@ -231,6 +231,20 @@
 
   .confeti { position: absolute; inset: 0; pointer-events: none; z-index: 40; }
 
+  /* Diálogo de confirmación propio (sustituye a confirm() nativo) */
+  .modal-ov { position: absolute; inset: 0; z-index: 60; display: flex; align-items: center;
+    justify-content: center; padding: 24px; background: rgba(5,7,14,.6);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); opacity: 0; transition: opacity .2s; }
+  .modal-ov.visible { opacity: 1; }
+  .modal { width: 100%; max-width: 320px; background: linear-gradient(180deg, var(--panel), #111827);
+    border: 1px solid var(--border2); border-radius: 20px; padding: 20px; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6); transform: scale(.92); transition: transform .2s; }
+  .modal-ov.visible .modal { transform: scale(1); }
+  .modal h3 { margin: 0 0 8px; font-size: 18px; font-weight: 800; }
+  .modal p { margin: 0 0 18px; font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+  .modal-btns { display: flex; gap: 10px; }
+  .modal-btns .btn { justify-content: center; font-weight: 700; }
+
   @media (prefers-reduced-motion: reduce) {
     *, #app > * { animation: none !important; transition: none !important; }
   }
@@ -244,13 +258,15 @@
 
 <script>
 /*
- * Contenido del Capítulo A — "Fundamentos y planificación"
- * Pasos 1 y 2 del proceso CCM de la guía ICMM 2026.
- *   Paso 1 — Planificar el proceso (gobernanza, liderazgo, equipo, alcance)
- *   Paso 2 — Identificar Eventos No Deseados Materiales (MUEs)
+ * Contenido del Capítulo A — "Fundamentos y planificación" (Pasos 1 y 2, ICMM 2026)
  *
- * Formato: grafo de nodos interpretado por el motor (motor.js).
- * Campo "ilustracion": id de la ilustración SVG que dibuja el motor.
+ * NARRATIVA RAMIFICADA (árbol de decisiones): cada opción puede definir su propio
+ * "siguiente", llevando al jugador por caminos distintos. Las consecuencias se
+ * arrastran mediante banderas (estado.banderas) que un nodo posterior consulta.
+ *
+ * "siguiente" puede ser:
+ *   - un string (id de nodo), o
+ *   - una función(estado) => id   (para consecuencias diferidas según el camino)
  *
  * Tipos de nodo: portada | escena | decision | seleccion | evaluacion | final
  */
@@ -276,8 +292,9 @@ window.CAPITULO_A = {
       capitulo: "Capítulo A — Fundamentos y planificación",
       persona: "rivas",
       dialogo:
-        "Soy la Ing. Rivas. Juntos vamos a blindar Mina Cerro Alto contra los " +
-        "eventos que pueden costar vidas. ¿List@ para empezar?",
+        "Soy la Ing. Rivas. Cada decisión que tomes cambia el rumbo de la faena. " +
+        "Juntos vamos a blindar Mina Cerro Alto contra los eventos que pueden costar " +
+        "vidas. ¿List@ para empezar?",
       boton: "Comenzar capítulo",
       siguiente: "intro"
     },
@@ -289,10 +306,10 @@ window.CAPITULO_A = {
       titulo: "Mina Cerro Alto",
       cuerpo:
         "Llegas como responsable de implementar la Gestión de Controles Críticos " +
-        "(CCM). Hace un mes, un camión de acarreo casi arrolla a un trabajador a " +
-        "pie: un aviso de que la faena necesita blindar sus riesgos mortales.\n\n" +
-        "Tu misión en este capítulo: sentar las bases del proceso (Paso 1) e " +
-        "identificar los Eventos No Deseados Materiales (Paso 2).",
+        "(CCM). Hace un mes, un camión de acarreo casi arrolla a un trabajador a pie: " +
+        "un aviso de que la faena necesita blindar sus riesgos mortales.\n\n" +
+        "Aquí no hay un guion único: tus decisiones abren caminos distintos y sus " +
+        "consecuencias te alcanzarán más adelante.",
       persona: "rivas",
       dialogo:
         "Antes de elegir un solo control, hay que construir los cimientos. La guía " +
@@ -300,7 +317,9 @@ window.CAPITULO_A = {
       siguiente: "p1_sponsor"
     },
 
-    // ------------------------------------------------ PASO 1: LIDERAZGO
+    // ============================================================
+    // PASO 1 — DECISIÓN RAÍZ: el patrocinio del liderazgo
+    // ============================================================
     p1_sponsor: {
       tipo: "decision",
       paso: "Paso 1 · Planificar el proceso",
@@ -314,101 +333,189 @@ window.CAPITULO_A = {
           texto:
             "Pedir que la gerencia patrocine visiblemente el programa y asigne " +
             "recursos y tiempo del personal.",
-          indicador: +12, xp: 20, bandera: "patrocinio", correcta: true,
+          indicador: +12, xp: 20, bandera: "apoyo", correcta: true,
           feedback:
             "Correcto. La guía 2026 refuerza que el compromiso visible del liderazgo " +
-            "y una gobernanza clara son la primera condición de éxito. Sin recursos ni " +
-            "tiempo asignado, el proceso queda en buenas intenciones."
+            "y una gobernanza clara son la primera condición de éxito.",
+          siguiente: "c_apoyo_si"
         },
         {
           texto:
             "Arrancar tú solo/a con lo que haya, para no molestar a la gerencia, y " +
             "mostrar resultados después.",
-          indicador: -8, xp: 5, bandera: "sin_patrocinio",
+          indicador: -8, xp: 5,
           feedback:
-            "Riesgo alto. Sin patrocinio ni gobernanza formal, más adelante te faltará " +
-            "autoridad para asignar dueños de control y detener tareas. Este atajo se " +
-            "paga en capítulos posteriores."
+            "Camino cuesta arriba. Sin patrocinio ni gobernanza, más adelante te " +
+            "faltará autoridad. Pero aún puedes intentar revertirlo.",
+          siguiente: "c_apoyo_no"
         },
         {
           texto: "Delegar todo el programa al área de Seguridad, porque 'es su tema'.",
-          indicador: -10, xp: 5, bandera: "sin_patrocinio",
+          indicador: -10, xp: 5,
           feedback:
-            "Error frecuente. El CCM no es 'del área de seguridad': es de la línea " +
-            "operativa. Aislarlo en Seguridad debilita la rendición de cuentas."
+            "Error frecuente. El CCM es de la línea operativa, no 'de Seguridad'. " +
+            "Aislarlo debilita la rendición de cuentas.",
+          siguiente: "c_apoyo_no"
         }
-      ],
-      siguiente: "p1_equipo"
+      ]
     },
 
-    p1_equipo: {
+    // ---- Consecuencia CAMINO A: con apoyo → pregunta "formar equipo" ----
+    c_apoyo_si: {
+      tipo: "escena",
+      paso: "Paso 1 · Camino: con respaldo",
+      ilustracion: "exito",
+      titulo: "La gerencia se compromete",
+      cuerpo:
+        "Ortiz firma el patrocinio, asigna presupuesto y libera tiempo del personal. " +
+        "Tienes autoridad y recursos para avanzar con fuerza.",
+      persona: "rivas",
+      dialogo: "Con el liderazgo detrás, ahora sí: armemos el equipo correcto.",
+      siguiente: "p1_equipo_apoyo"
+    },
+
+    p1_equipo_apoyo: {
       tipo: "decision",
-      paso: "Paso 1 · Planificar el proceso",
+      paso: "Paso 1 · Con respaldo",
       ilustracion: "equipo",
       titulo: "Formar el equipo",
-      cuerpo: "Debes armar el equipo que llevará adelante el proceso. ¿A quiénes convocas?",
+      cuerpo:
+        "Con el respaldo asegurado, armas el equipo que llevará el proceso. " +
+        "¿A quiénes convocas?",
       opciones: [
         {
           texto:
-            "Un equipo multidisciplinario: operaciones, mantenimiento, seguridad y " +
+            "Equipo multidisciplinario: operaciones, mantenimiento, seguridad y " +
             "trabajadores de primera línea con experiencia en la tarea.",
-          indicador: +12, xp: 20, bandera: "equipo_linea", correcta: true,
+          indicador: +12, xp: 20, bandera: "equipo", correcta: true,
           feedback:
-            "Correcto. La guía 2026 pone énfasis en el involucramiento de la primera " +
-            "línea: quienes ejecutan la tarea conocen los controles reales, no los que " +
-            "están 'en el papel'."
+            "Correcto. La guía 2026 enfatiza el involucramiento de la primera línea: " +
+            "quienes ejecutan la tarea conocen los controles reales.",
+          siguiente: "p1_alcance"
         },
         {
-          texto: "Solo ingenieros y jefaturas: son quienes toman las decisiones técnicas.",
-          indicador: -6, xp: 5,
+          texto: "Solo ingenieros y jefaturas: ellos toman las decisiones técnicas.",
+          indicador: -6, xp: 8,
           feedback:
-            "Incompleto. Sin la voz de la primera línea corres el riesgo de diseñar " +
-            "controles que no reflejan cómo se hace realmente el trabajo."
+            "Incompleto. Sin la voz de la primera línea diseñarás controles que no " +
+            "reflejan cómo se hace realmente el trabajo.",
+          siguiente: "p1_alcance"
         },
         {
           texto: "Contratar una consultora para que lo haga íntegramente por fuera.",
-          indicador: -8, xp: 5,
+          indicador: -8, xp: 8,
           feedback:
-            "Débil. Una consultora puede facilitar, pero si el conocimiento y la " +
-            "responsabilidad no quedan en la operación, el sistema no se sostiene."
+            "Débil. Si el conocimiento y la responsabilidad no quedan en la operación, " +
+            "el sistema no se sostiene.",
+          siguiente: "p1_alcance"
         }
-      ],
+      ]
+    },
+
+    // ---- Consecuencia CAMINO B: sin apoyo → pregunta DISTINTA (recuperar) ----
+    c_apoyo_no: {
+      tipo: "escena",
+      paso: "Paso 1 · Camino: sin respaldo",
+      ilustracion: "traba",
+      titulo: "Avanzas sin red",
+      cuerpo:
+        "Sin patrocinio formal, arrancas con lo justo: ni presupuesto claro ni tiempo " +
+        "liberado del personal. La línea operativa te ve como 'un tema de Seguridad " +
+        "más'. Este camino será más difícil.",
+      persona: "rivas",
+      dialogo:
+        "No es el fin del mundo, pero ojo: sin liderazgo, cuando toque DETENER una " +
+        "tarea te va a faltar autoridad. ¿Cómo procedes?",
+      siguiente: "p1_recuperar"
+    },
+
+    p1_recuperar: {
+      tipo: "decision",
+      paso: "Paso 1 · Sin respaldo",
+      ilustracion: "traba",
+      titulo: "Recuperar el rumbo",
+      cuerpo:
+        "En la primera reunión te falta peso. Tienes una oportunidad de enderezar el " +
+        "proceso. ¿Qué haces?",
+      opciones: [
+        {
+          texto:
+            "Documentar los riesgos mortales de la faena y volver a la gerencia con " +
+            "evidencia para conseguir el patrocinio que faltó.",
+          indicador: +14, xp: 22, bandera: "apoyo", correcta: true,
+          feedback:
+            "Bien recuperado. Con evidencia del potencial de fatalidad, Ortiz " +
+            "reacciona y respalda el programa. Vuelves al camino sólido.",
+          siguiente: "c_recupera_ok"
+        },
+        {
+          texto:
+            "Avanzar igual, sin involucrar a la línea, para mostrar algo rápido.",
+          indicador: -8, xp: 6,
+          feedback:
+            "Sigues sin cimientos. Mostrar 'algo' no construye un sistema que aguante. " +
+            "La deuda de liderazgo te seguirá.",
+          siguiente: "p1_alcance"
+        },
+        {
+          texto: "Formar el equipo solo con el área de Seguridad, que es lo que tienes.",
+          indicador: -6, xp: 6,
+          feedback:
+            "Comprensible, pero refuerza el error: el CCM queda aislado de operaciones, " +
+            "justo donde ocurren los eventos mortales.",
+          siguiente: "p1_alcance"
+        }
+      ]
+    },
+
+    c_recupera_ok: {
+      tipo: "escena",
+      paso: "Paso 1 · Rumbo recuperado",
+      ilustracion: "exito",
+      titulo: "Reviertes la situación",
+      cuerpo:
+        "La evidencia de riesgos mortales cambia la conversación. Ortiz asigna " +
+        "recursos y respalda el programa: recuperas la autoridad que faltaba.",
+      persona: "rivas",
+      dialogo: "Así se hace. Nunca es tarde para poner el liderazgo donde corresponde.",
       siguiente: "p1_alcance"
     },
 
+    // ---- Reconvergencia: definir alcance (todos los caminos pasan por aquí) ----
     p1_alcance: {
       tipo: "escena",
       paso: "Paso 1 · Planificar el proceso",
       ilustracion: "alcance",
       titulo: "Definir el alcance",
       cuerpo:
-        "Con el equipo formado, definen el alcance: se enfocarán en los riesgos con " +
-        "potencial de consecuencia catastrófica (fatalidades o eventos mayores), no " +
-        "en todos los riesgos de la operación.",
+        "Defines el alcance: el CCM se enfocará en los riesgos con potencial de " +
+        "consecuencia catastrófica (fatalidades o eventos mayores), no en todos los " +
+        "riesgos de la operación.",
       persona: "rivas",
       dialogo:
-        "El CCM no reemplaza tu sistema de gestión de riesgos: se concentra en los " +
-        "pocos eventos que pueden matar o destruir. Eso nos lleva al Paso 2.",
+        "El CCM no reemplaza tu sistema de riesgos: se concentra en los pocos eventos " +
+        "que pueden matar o destruir. Eso nos lleva al Paso 2.",
       siguiente: "p2_intro"
     },
 
-    // ------------------------------------------- PASO 2: IDENTIFICAR MUEs
+    // ============================================================
+    // PASO 2 — IDENTIFICAR MUEs
+    // ============================================================
     p2_intro: {
       tipo: "escena",
       paso: "Paso 2 · Identificar MUEs",
       ilustracion: "mues",
       titulo: "¿Qué es un MUE?",
       cuerpo:
-        "Un Evento No Deseado Material (MUE) es un evento con potencial de " +
-        "consecuencia MUY GRAVE: fatalidad o daño catastrófico.\n\n" +
+        "Un Evento No Deseado Material (MUE) es un evento con potencial de consecuencia " +
+        "MUY GRAVE: fatalidad o daño catastrófico.\n\n" +
         "OJO: no es lo mismo que un riesgo frecuente. Algo puede pasar seguido y aun " +
         "así NO ser un MUE si su peor consecuencia es menor. Y algo raro puede ser un " +
         "MUE si, cuando ocurre, mata.",
       persona: "rivas",
       dialogo:
-        "Este es el paso que más equivocan las faenas. Si priorizas mal aquí, todo lo " +
-        "que construyas encima queda torcido. Concéntrate en la CONSECUENCIA, no en la " +
-        "frecuencia.",
+        "Este es el paso que más equivocan las faenas. Concéntrate en la CONSECUENCIA, " +
+        "no en la frecuencia.",
       siguiente: "p2_seleccion"
     },
 
@@ -447,15 +554,15 @@ window.CAPITULO_A = {
       siguiente: "p2_ranking"
     },
 
+    // ---- DECISIÓN que ramifica el desenlace + CONSECUENCIA DIFERIDA del Paso 1 ----
     p2_ranking: {
       tipo: "decision",
       paso: "Paso 2 · Identificar MUEs",
       ilustracion: "camion_persona",
-      titulo: "Priorizar",
+      titulo: "Priorizar bajo presión",
       cuerpo:
-        "El equipo tiene recursos limitados para empezar. El Superintendente Delgado " +
-        "presiona: «Partamos por lo que más se reporta, los cortes de mano; hay decenas " +
-        "al mes». ¿Qué respondes?",
+        "El Superintendente Delgado presiona: «Partamos por lo que más se reporta, los " +
+        "cortes de mano; hay decenas al mes». ¿Qué respondes?",
       opciones: [
         {
           texto:
@@ -464,80 +571,80 @@ window.CAPITULO_A = {
           indicador: +10, xp: 20, correcta: true,
           feedback:
             "Correcto. CCM se ordena por consecuencia potencial, no por número de " +
-            "reportes. Los cortes importan, pero no son el foco de los controles críticos."
+            "reportes. Ahora veremos qué tan firme quedó tu decisión.",
+          // Consecuencia DIFERIDA: depende de si aseguraste el liderazgo en el Paso 1
+          siguiente: function (estado) {
+            return estado.banderas.apoyo ? "final_bien" : "final_sinapoyo";
+          }
         },
         {
-          texto: "Ceder y empezar por los cortes de mano, para mostrar cifras que bajen rápido.",
-          indicador: -10, xp: 5,
+          texto:
+            "Ceder y empezar por los cortes de mano, para mostrar cifras que bajen " +
+            "rápido.",
+          indicador: -12, xp: 4,
           feedback:
-            "Trampa clásica. Reducir la estadística de lesiones menores no reduce el " +
-            "riesgo de fatalidad. Es el error que la guía 2026 busca corregir."
+            "Cediste a la presión de producción. Reducir lesiones menores no reduce el " +
+            "riesgo de fatalidad… y el destino de la faena lo confirmará.",
+          siguiente: "final_incidente"
         }
-      ],
-      siguiente: "eval_intro"
+      ]
     },
 
-    // --------------------------------------------- EVALUACIÓN DE CIERRE
-    eval_intro: {
-      tipo: "escena",
-      ilustracion: "evaluacion",
-      titulo: "Caso integrador",
+    // ============================================================
+    // DESENLACES RAMIFICADOS (tres finales distintos)
+    // ============================================================
+    final_bien: {
+      tipo: "final", variante: "exito",
+      ilustracion: "exito",
+      titulo: "¡Faena blindada!",
       cuerpo:
-        "Para cerrar el capítulo, dos preguntas rápidas que integran lo visto. " +
-        "Respóndelas bien para consolidar las bases del sistema.",
-      siguiente: "eval_1"
-    },
-
-    eval_1: {
-      tipo: "evaluacion",
-      titulo: "Pregunta 1 de 2",
-      cuerpo: "¿Cuál es el criterio que define a un Evento No Deseado Material (MUE)?",
-      opciones: [
-        { texto: "Que ocurra con mucha frecuencia en la operación.", correcta: false },
-        { texto: "Que tenga potencial de consecuencia catastrófica (fatalidad o daño mayor).", correcta: true },
-        { texto: "Que sea difícil y costoso de controlar.", correcta: false },
-        { texto: "Que esté reportado en el sistema de incidentes.", correcta: false }
-      ],
-      feedbackOk: "Exacto: lo define la CONSECUENCIA potencial, no la frecuencia ni el costo.",
-      feedbackNo: "Recuerda: un MUE se define por su potencial de consecuencia catastrófica.",
-      siguiente: "eval_2"
-    },
-
-    eval_2: {
-      tipo: "evaluacion",
-      titulo: "Pregunta 2 de 2",
-      cuerpo:
-        "Según la edición 2026, ¿cuál es la primera condición para que el proceso CCM " +
-        "funcione?",
-      opciones: [
-        { texto: "Comprar un software de gestión de controles.", correcta: false },
-        { texto: "Que el área de Seguridad se haga cargo en exclusiva.", correcta: false },
-        { texto: "Compromiso visible del liderazgo y gobernanza clara.", correcta: true },
-        { texto: "Tener el mayor número posible de controles críticos.", correcta: false }
-      ],
-      feedbackOk: "Correcto. Liderazgo y gobernanza son los cimientos del sistema.",
-      feedbackNo: "La base es el liderazgo y la gobernanza, no la tecnología ni delegar en Seguridad.",
-      siguiente: "final"
-    },
-
-    // ------------------------------------------------------------ FINAL
-    final: {
-      tipo: "final",
-      titulo: "¡Capítulo A completado!",
-      cuerpo:
-        "Sentaste las bases: aseguraste liderazgo, formaste un equipo con la primera " +
-        "línea, definiste el alcance en lo catastrófico e identificaste los MUEs de " +
-        "Cerro Alto.\n\nEn el Capítulo B pasarás del riesgo al control: construirás el " +
-        "diagrama de corbatín (bowtie) y seleccionarás los controles CRÍTICOS.",
+        "Semanas después, el sistema CCM está en pie: liderazgo comprometido, equipo " +
+        "con la primera línea y los MUEs correctamente priorizados. Cuando un camión " +
+        "invade una zona de tránsito peatonal, el control crítico funciona y se evita " +
+        "la tragedia.\n\nEn el Capítulo B pasarás del riesgo al control: el diagrama de " +
+        "corbatín (bowtie) y la selección de controles CRÍTICOS.",
       persona: "rivas",
-      dialogoAlto:
-        "Bases sólidas. Con este criterio, el resto del sistema se va a sostener. " +
-        "Nos vemos en el bowtie.",
-      dialogoBajo:
-        "Terminamos, pero repasa el criterio de MUE y el rol del liderazgo antes de " +
-        "seguir: si esto queda flojo, lo demás se tuerce.",
-      insignia: "Analista de MUEs",
+      dialogo:
+        "Camino impecable: cimientos sólidos y foco en lo que mata. Así se sostiene un " +
+        "sistema. Nos vemos en el bowtie.",
+      insignia: "Guardián de Cimientos",
       umbralAprobacion: 65
+    },
+
+    final_sinapoyo: {
+      tipo: "final", variante: "mixto",
+      ilustracion: "traba",
+      titulo: "Lo correcto, cuesta arriba",
+      cuerpo:
+        "Priorizaste bien los MUEs, pero la deuda del Paso 1 te alcanza: sin patrocinio " +
+        "firme del liderazgo, cuando hubo que DETENER una tarea riesgosa te faltó " +
+        "autoridad y la orden llegó tarde. Aprendiste en carne propia por qué la guía " +
+        "2026 pone el liderazgo primero.\n\nEn el Capítulo B pasarás del riesgo al " +
+        "control: el bowtie y la selección de controles CRÍTICOS.",
+      persona: "rivas",
+      dialogo:
+        "Tu criterio de riesgo fue bueno. La lección: sin liderazgo, hasta la decisión " +
+        "correcta pierde fuerza. En el próximo capítulo lo tendremos en cuenta.",
+      insignia: "Analista de MUEs",
+      umbralAprobacion: 55
+    },
+
+    final_incidente: {
+      tipo: "final", variante: "fallo",
+      ilustracion: "camion_persona",
+      titulo: "Una lección amarga",
+      cuerpo:
+        "Enfocaste el esfuerzo en los cortes de mano y las cifras menores bajaron. Pero " +
+        "los riesgos mortales quedaron sin controles críticos. Semanas después, el mismo " +
+        "escenario del inicio se repite: un camión de acarreo y un trabajador a pie, esta " +
+        "vez sin nada que lo frene a tiempo.\n\nEs momento de volver a empezar y ordenar " +
+        "el CCM por CONSECUENCIA, no por frecuencia.",
+      persona: "rivas",
+      dialogo:
+        "Duele, pero es la lección central: reducir lo frecuente no salva vidas si " +
+        "dejas descubierto lo que mata. Repasemos y volvamos a intentarlo.",
+      insignia: null,
+      umbralAprobacion: 200 // nunca aprueba: es el desenlace de fallo
     }
   }
 };
@@ -745,6 +852,36 @@ window.CAPITULO_A = {
     </g>
   </svg>`;
 
+  // Escena: consecuencia positiva (sistema sólido / camino correcto)
+  S.exito = () => `<svg viewBox="0 0 400 210" preserveAspectRatio="xMidYMid slice">
+    <defs>${sky("se", "#0E2A2A", "#10233A")}
+      <radialGradient id="seg" cx="50%" cy="45%" r="55%"><stop offset="0%" stop-color="#2DD4BF" stop-opacity=".5"/><stop offset="100%" stop-color="#2DD4BF" stop-opacity="0"/></radialGradient></defs>
+    <rect width="400" height="210" fill="url(#se)"/>
+    <circle cx="200" cy="100" r="120" fill="url(#seg)"/>
+    <polyline points="60,150 130,150 175,95 230,120 300,55 350,55" fill="none" stroke="#2DD4BF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M330 55 l20 0 l0 20" fill="none" stroke="#2DD4BF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <g transform="translate(200 100)">
+      <circle r="42" fill="#10233A" stroke="#2DD4BF" stroke-width="4"/>
+      <path d="M-18 2 l12 14 l26 -32" fill="none" stroke="#2DD4BF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </svg>`;
+
+  // Escena: consecuencia negativa / traba (camino difícil, sin respaldo)
+  S.traba = () => `<svg viewBox="0 0 400 210" preserveAspectRatio="xMidYMid slice">
+    <rect width="400" height="210" fill="#20161A"/>
+    <rect width="400" height="210" fill="#101A33" opacity=".5"/>
+    <!-- barrera a rayas -->
+    <g transform="translate(0 118)">
+      <rect x="40" y="0" width="320" height="20" rx="4" fill="#1A2338" stroke="#33456B" stroke-width="1.5"/>
+      ${Array.from({length:8},(_, i)=>`<path d="M${52+i*40} 2 l16 0 l-16 16 l-6 0z" fill="#FF8A3D"/>`).join("")}
+      <rect x="60" y="20" width="8" height="52" fill="#33456B"/><rect x="332" y="20" width="8" height="52" fill="#33456B"/>
+    </g>
+    <!-- cono -->
+    <g transform="translate(200 150)"><path d="M0 -34 L16 26 H-16z" fill="#FF6B1A"/><rect x="-20" y="26" width="40" height="8" rx="3" fill="#E0730A"/><rect x="-9" y="-8" width="18" height="6" fill="#F4EEE6"/><rect x="-12" y="4" width="24" height="6" fill="#F4EEE6"/></g>
+    <!-- alerta -->
+    <g transform="translate(300 70)"><path d="M0 -20 L18 14 H-18z" fill="none" stroke="#FFC53D" stroke-width="3" stroke-linejoin="round"/><rect x="-2.4" y="-10" width="4.8" height="12" rx="2.4" fill="#FFC53D"/><circle cx="0" cy="7" r="2.6" fill="#FFC53D"/></g>
+  </svg>`;
+
   // Iconos de ítems MUE (24x24)
   const IC = {
     camion: `<path d="M2 15 h13 v-5 l3 0 3 4 v6 q0 1 -1 1 h-2" stroke="#FF8A3D" stroke-width="1.8" fill="none" stroke-linejoin="round"/><path d="M2 8 h13 v9 h-13z" fill="#FF8A3D" opacity=".25"/><circle cx="7" cy="19" r="2.2" fill="#FF8A3D"/><circle cx="18" cy="19" r="2.2" fill="#FF8A3D"/>`,
@@ -814,7 +951,10 @@ window.CAPITULO_A = {
   }
 
   /* ============================ NAVEGACIÓN ============================ */
-  const ir = (id) => { estado.nodo = id; guardar(); render(); };
+  // Resuelve un "siguiente" que puede ser string o función(estado) => id.
+  // Es la base de la narrativa ramificada y de las consecuencias diferidas.
+  const sig = (v) => (typeof v === "function" ? v(estado) : v);
+  const ir = (id) => { estado.nodo = sig(id); guardar(); render(); };
 
   function render() {
     const nodo = cap.nodos[estado.nodo];
@@ -909,7 +1049,9 @@ window.CAPITULO_A = {
            <button class="btn primario" id="seguir">Continuar <span>▸</span></button>`;
         app.appendChild(fb);
         fb.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
-        document.getElementById("seguir").onclick = () => ir(nodo.siguiente);
+        // RAMIFICACIÓN: cada opción define su propio camino (o cae al del nodo).
+        const destino = op.siguiente != null ? op.siguiente : nodo.siguiente;
+        document.getElementById("seguir").onclick = () => ir(destino);
       };
     });
   }
@@ -999,33 +1141,41 @@ window.CAPITULO_A = {
   }
 
   /* -------------------------------- FINAL ------------------------------- */
+  // Tres variantes de desenlace según el camino tomado: exito | mixto | fallo.
+  const HEROES = {
+    exito: { col: "#2DD4BF", ico: `<path d="M28 46 l8 9 l18 -22" stroke="#2DD4BF" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` },
+    mixto: { col: "#FFC53D", ico: `<rect x="36.6" y="30" width="6.8" height="26" rx="3.4" fill="#FFC53D"/><circle cx="40" cy="66" r="4" fill="#FFC53D"/>` },
+    fallo: { col: "#FF5A5F", ico: `<path d="M31 37 l18 18 M49 37 l-18 18" stroke="#FF5A5F" stroke-width="6" fill="none" stroke-linecap="round"/>` }
+  };
   function rFinal(nodo) {
     const v = clamp(estado.indicador);
-    const aprob = v >= nodo.umbralAprobacion;
+    const variante = nodo.variante || "exito";
+    const h = HEROES[variante] || HEROES.exito;
+    const celebra = variante === "exito";
     app.innerHTML = card(`
-      <div class="final-hero ${aprob ? "" : "gris"}">
-        <div class="final-glow"></div>
+      <div class="final-hero var-${variante}">
+        <div class="final-glow" style="background:radial-gradient(circle, ${h.col}66, transparent 65%)"></div>
         <svg viewBox="0 0 80 92" width="104" height="120" class="final-escudo">
-          <defs><linearGradient id="fg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFD98A"/><stop offset="100%" stop-color="#FF6B1A"/></linearGradient></defs>
-          <path d="M40 3 L74 16 V40 Q74 74 40 89 Q6 74 6 40 V16z" fill="#141C2E" stroke="url(#fg)" stroke-width="3"/>
-          <path d="M28 46 l8 9 l18 -22" stroke="url(#fg)" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M40 3 L74 16 V40 Q74 74 40 89 Q6 74 6 40 V16z" fill="#141C2E" stroke="${h.col}" stroke-width="3"/>
+          ${h.ico}
         </svg>
       </div>
       <div class="card-pad">
         <h2 style="text-align:center">${esc(nodo.titulo)}</h2>
         <div class="resultado">
           <div class="metrica"><b>${v}</b><small>Seguridad</small></div>
-          <div class="metrica"><b>Nv ${nivel(estado.xp)}</b><small>${estado.xp} XP</small></div>
-          <div class="metrica"><b>${estado.aciertosEval}/${estado.totalEval}</b><small>Evaluación</small></div>
+          <div class="metrica"><b>Nv ${nivel(estado.xp)}</b><small>Nivel</small></div>
+          <div class="metrica"><b>${estado.xp}</b><small>XP total</small></div>
         </div>
-        ${aprob ? `<div class="insignia"><span class="ins-medalla">🏅</span> Insignia obtenida<b>${esc(nodo.insignia)}</b></div>` : ""}
+        ${nodo.insignia ? `<div class="insignia"><span class="ins-medalla">🏅</span> Insignia obtenida<b>${esc(nodo.insignia)}</b></div>` : ""}
         <p class="cuerpo">${esc(nodo.cuerpo)}</p>
-        ${bloqueDialogo(nodo.persona, aprob ? nodo.dialogoAlto : nodo.dialogoBajo)}
+        ${bloqueDialogo(nodo.persona, nodo.dialogo)}
       </div>`, "con-escena") +
-      `<button class="btn primario" id="reiniciar-final">Volver a jugar</button>
-       <div class="prox">🔒 Próximamente · Capítulo B — «Del bowtie al control crítico»</div>`;
-    document.getElementById("reiniciar-final").onclick = reiniciar;
-    if (aprob && !reduce) confeti();
+      `<button class="btn primario" id="reiniciar-final">${variante === "fallo" ? "Reintentar el capítulo" : "Volver a jugar"}</button>
+       ${variante === "fallo" ? "" : `<div class="prox">🔒 Próximamente · Capítulo B — «Del bowtie al control crítico»</div>`}`;
+    // Reinicio directo y garantizado (sin confirm() nativo, que el hosting bloquea).
+    document.getElementById("reiniciar-final").onclick = reiniciarDirecto;
+    if (celebra && !reduce) confeti();
   }
 
   /* ------------------------------ CONFETI ------------------------------- */
@@ -1052,10 +1202,29 @@ window.CAPITULO_A = {
     })();
   }
 
-  function reiniciar() {
-    if (!confirm("¿Reiniciar el capítulo desde el principio?")) return;
-    localStorage.removeItem(CLAVE);
+  function reiniciarDirecto() {
+    try { localStorage.removeItem(CLAVE); } catch (e) {}
     estado = nuevoEstado(); guardar(); render();
+  }
+
+  // Diálogo de confirmación propio (no usamos confirm() nativo: el iframe del
+  // hosting lo bloquea, por eso antes el botón "no hacía nada").
+  function reiniciar() {
+    const ov = document.createElement("div");
+    ov.className = "modal-ov";
+    ov.innerHTML = `<div class="modal">
+        <h3>¿Reiniciar el capítulo?</h3>
+        <p>Perderás el progreso y las decisiones de esta partida.</p>
+        <div class="modal-btns">
+          <button class="btn" id="m-no">Cancelar</button>
+          <button class="btn primario" id="m-si">Reiniciar</button>
+        </div></div>`;
+    document.querySelector(".telefono").appendChild(ov);
+    requestAnimationFrame(() => ov.classList.add("visible"));
+    const cerrar = () => ov.remove();
+    ov.addEventListener("click", (e) => { if (e.target === ov) cerrar(); });
+    ov.querySelector("#m-no").onclick = cerrar;
+    ov.querySelector("#m-si").onclick = () => { cerrar(); reiniciarDirecto(); };
   }
 
   render();
