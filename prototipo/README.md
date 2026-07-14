@@ -12,12 +12,23 @@ distinta:
   de *manipulación* (no de alternativas): armar el bowtie clasificando controles, filtrar
   los controles críticos, completar la definición con fichas y abrir la puerta con un
   teclado numérico usando el código revelado.
+- **Capítulo C — Centro de Operaciones** (Pasos 5–6): `capitulo-c.html`.
+  **Simulación de gestión (dashboard)**: emparejar cada control crítico con su dueño en el
+  nivel correcto, fijar con deslizadores la frecuencia de verificación de cada uno, y luego
+  un **turno en vivo** donde hay que responder a las alertas a tiempo para mantener los
+  medidores en verde.
+
+Cada capítulo usa una **técnica de comunicación distinta** a propósito (narrativa
+ramificada · escape room · simulación) para mostrar variedad de recursos de aprendizaje.
 
 ## Cómo probarlo
 
-Abre `index.html` (Capítulo A) o `capitulo-b.html` (Capítulo B) en cualquier navegador
-(doble clic; funciona offline, sin servidor). Diseñado en formato vertical de teléfono;
-en escritorio se muestra dentro de un marco tipo móvil.
+Abre `index.html` (Cap. A), `capitulo-b.html` (Cap. B) o `capitulo-c.html` (Cap. C) en
+cualquier navegador (doble clic; funciona offline, sin servidor). Diseñado en formato
+vertical de teléfono; en escritorio se muestra dentro de un marco tipo móvil.
+
+Versiones `*.standalone.html`: un solo archivo autocontenido de cada capítulo, para
+hosting público / abrir en incógnito.
 
 ## Qué demuestra
 

@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0A0E1A">
+<title>Guardianes del Control — Capítulo C</title>
+<style>
+  /* Juego móvil: identidad cinematográfica oscura (single-theme intencional). */
+  :root {
+    color-scheme: dark;
+    --bg: #0A0E1A;
+    --bg2: #0E1424;
+    --panel: #141C2E;
+    --panel2: #1A2338;
+    --glass: rgba(24, 32, 52, .72);
+    --border: #26314D;
+    --border2: #313E5E;
+    --text: #EAF0FA;
+    --muted: #8A97B4;
+    --amber: #FF8A3D;
+    --amber2: #FF6B1A;
+    --gold: #FFC53D;
+    --teal: #2DD4BF;
+    --violet: #9B7BFF;
+    --red: #FF5A5F;
+    --r: 20px;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(1200px 700px at 50% -10%, #16203A 0%, transparent 60%),
+      radial-gradient(900px 600px at 80% 110%, #1A1330 0%, transparent 55%),
+      #05070E;
+    color: var(--text); font-family: var(--font);
+    display: flex; justify-content: center; min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .telefono {
+    width: 100%; max-width: 440px; min-height: 100vh;
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+    display: flex; flex-direction: column; position: relative; overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(120,150,220,.08), 0 30px 80px rgba(0,0,0,.6);
+  }
+  @media (min-width: 480px) {
+    body { padding: 22px 0; align-items: center; }
+    .telefono { min-height: calc(100vh - 44px); border-radius: 34px; }
+  }
+
+  /* ------------------------------ HUD ------------------------------ */
+  #hud {
+    position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; background: var(--glass);
+    backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    border-bottom: 1px solid rgba(120,150,220,.12);
+  }
+  .hud-menu {
+    order: 3; width: 34px; height: 34px; flex: none; border-radius: 11px; cursor: pointer;
+    background: var(--panel2); border: 1px solid var(--border); color: var(--muted); font-size: 16px;
+  }
+  .hud-menu:active { transform: rotate(-90deg); }
+  .hud-perfil { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .hud-avatar { width: 40px; height: 40px; border-radius: 50%; flex: none; overflow: hidden;
+    border: 2px solid var(--amber); box-shadow: 0 0 14px rgba(255,138,61,.4); }
+  .hud-avatar svg { display: block; }
+  .hud-nivel { flex: 1; min-width: 0; }
+  .hud-nivel-top { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; }
+  .hud-nivel-top span:first-child { font-weight: 800; letter-spacing: .3px; }
+  .hud-xp-num { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .hud-xpbar { height: 7px; background: #0A0F1C; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); }
+  .hud-xpfill { height: 100%; border-radius: 6px; width: 0;
+    background: linear-gradient(90deg, var(--gold), var(--amber2));
+    box-shadow: 0 0 10px rgba(255,138,61,.6); transition: width .8s cubic-bezier(.2,.8,.2,1); }
+
+  .hud-score { display: flex; align-items: center; gap: 6px; flex: none; padding: 4px 10px 4px 6px;
+    border-radius: 13px; background: var(--panel2); border: 1px solid var(--border); }
+  .hud-score.ok { color: var(--teal); } .hud-score.med { color: var(--gold); } .hud-score.bajo { color: var(--red); }
+  .hud-score-txt { display: flex; flex-direction: column; line-height: 1; }
+  .hud-score-txt b { font-size: 17px; font-variant-numeric: tabular-nums; }
+  .hud-score-txt small { font-size: 8.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+
+  .flotante-xp {
+    position: absolute; top: 46px; left: 60px; font-weight: 800; font-size: 15px; color: var(--gold);
+    text-shadow: 0 2px 10px rgba(255,197,61,.6); pointer-events: none;
+    animation: subeXP 1.1s ease forwards;
+  }
+  @keyframes subeXP { 0% { opacity: 0; transform: translateY(6px) scale(.8);} 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-28px) scale(1.1);} }
+
+  /* ------------------------------ APP ------------------------------ */
+  #app { flex: 1; position: relative; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+  #app > * { animation: entra .4s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes entra { from { opacity: 0; transform: translateY(14px);} to { opacity: 1; transform: none;} }
+  #app { padding: 16px 16px 40px; }
+  #app:has(.portada) { padding: 0; }
+
+  /* ---------------------------- PORTADA ---------------------------- */
+  .portada { display: flex; flex-direction: column; min-height: 100%; }
+  .portada-cielo { position: relative; height: 240px; overflow: hidden; }
+  .portada-cielo svg { width: 100%; height: 100%; object-fit: cover; }
+  .portada-cielo::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 40%, var(--bg) 100%); }
+  .dust { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #FFD9A0;
+    opacity: .7; left: 20%; top: 60%; animation: flota 6s ease-in-out infinite; }
+  .dust.d2 { left: 55%; top: 40%; animation-delay: 2s; width: 3px; height: 3px; }
+  .dust.d3 { left: 78%; top: 70%; animation-delay: 4s; }
+  @keyframes flota { 0%,100% { transform: translateY(0); opacity:.3;} 50% { transform: translateY(-16px); opacity:.9;} }
+
+  .portada-cont { flex: 1; margin-top: -60px; padding: 0 22px 30px; text-align: center;
+    display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2; }
+  .logo-escudo { filter: drop-shadow(0 10px 30px rgba(255,107,26,.4)); animation: latido 3.5s ease-in-out infinite; }
+  @keyframes latido { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-6px);} }
+  .portada-titulo { font-size: 32px; font-weight: 900; letter-spacing: -.5px; margin: 8px 0 2px;
+    line-height: 1.02; text-wrap: balance;
+    background: linear-gradient(180deg, #FFF 0%, #FFD9A8 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .portada-sub { color: var(--muted); font-size: 13px; max-width: 300px; }
+  .portada-chip { margin-top: 14px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px;
+    color: var(--amber); background: rgba(255,138,61,.12); border: 1px solid rgba(255,138,61,.35);
+    padding: 6px 14px; border-radius: 999px; }
+  .portada .dialogo { margin-top: 22px; text-align: left; }
+  .grande { margin-top: 22px; font-size: 17px; padding: 17px; }
+
+  /* ----------------------------- CARDS ----------------------------- */
+  .chip-paso { display: inline-block; font-size: 10.5px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .7px; color: var(--amber); background: rgba(255,138,61,.1);
+    border: 1px solid rgba(255,138,61,.3); padding: 5px 11px; border-radius: 999px; margin-bottom: 12px; }
+  .card { background: linear-gradient(180deg, var(--panel) 0%, #111827 100%);
+    border: 1px solid var(--border); border-radius: var(--r); margin-bottom: 14px; overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); }
+  .card-pad { padding: 16px 18px 18px; }
+  h2 { font-size: 21px; font-weight: 800; line-height: 1.15; letter-spacing: -.3px; margin: 0 0 10px; text-wrap: balance; }
+  .cuerpo { font-size: 15px; line-height: 1.58; color: #CCD6E6; margin: 0; }
+
+  .escena { position: relative; height: 168px; overflow: hidden; }
+  .escena svg { width: 100%; height: 100%; display: block; }
+  .escena-fade { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, var(--panel) 100%); }
+
+  /* --------------------------- DIÁLOGO ----------------------------- */
+  .dialogo { display: flex; gap: 12px; align-items: flex-start; margin-top: 16px;
+    background: linear-gradient(135deg, rgba(155,123,255,.1), rgba(45,212,191,.06));
+    border: 1px solid var(--border2); border-left: 3px solid var(--amber);
+    border-radius: 14px; padding: 12px 13px; }
+  .dialogo.chico { margin-top: 12px; }
+  .dialogo-av { width: 54px; height: 54px; flex: none; border-radius: 50%; overflow: hidden;
+    border: 2px solid var(--amber); box-shadow: 0 0 16px rgba(255,138,61,.35); }
+  .dialogo-av svg { display: block; width: 100%; height: 100%; }
+  .dialogo-cuerpo { min-width: 0; }
+  .dialogo-nombre { font-size: 13px; font-weight: 800; margin-bottom: 3px; display: flex; flex-direction: column; }
+  .dialogo-nombre span { font-size: 10.5px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+  .dialogo-texto { font-size: 13.5px; line-height: 1.5; color: #E4EAF5; font-style: italic; }
+
+  /* ---------------------------- BOTONES ---------------------------- */
+  .btn { display: flex; align-items: center; gap: 10px; width: 100%; border-radius: 14px;
+    padding: 15px 16px; font-size: 15px; font-family: var(--font); line-height: 1.35;
+    border: 1px solid var(--border2); background: var(--panel2); color: var(--text);
+    cursor: pointer; text-align: left; transition: transform .09s ease, border-color .2s, background .2s, box-shadow .2s; }
+  .btn:active { transform: scale(.98); }
+  .btn.primario { justify-content: center; font-weight: 800; letter-spacing: .2px; border: none;
+    background: linear-gradient(180deg, var(--amber) 0%, var(--amber2) 100%); color: #1A0E05;
+    box-shadow: 0 8px 22px rgba(255,107,26,.35), inset 0 1px 0 rgba(255,255,255,.4); margin-top: 4px; }
+  .btn.primario span { font-weight: 900; }
+  .btn.primario:active { box-shadow: 0 3px 12px rgba(255,107,26,.4); }
+
+  .opciones, .items { display: flex; flex-direction: column; gap: 10px; }
+  .opcion { position: relative; }
+  .opcion:hover { border-color: var(--amber); }
+  .op-dot { width: 12px; height: 12px; flex: none; border-radius: 50%; border: 2px solid var(--border2); transition: .2s; }
+  .opcion:hover .op-dot { border-color: var(--amber); box-shadow: 0 0 10px rgba(255,138,61,.5); }
+  .op-letra { width: 26px; height: 26px; flex: none; border-radius: 9px; display: flex; align-items: center;
+    justify-content: center; font-weight: 800; font-size: 13px; background: #0F1728; border: 1px solid var(--border2); color: var(--muted); }
+  .inerte { opacity: .45; }
+  .elegida-ok { border-color: var(--teal) !important; background: rgba(45,212,191,.13); opacity: 1; }
+  .elegida-ok .op-dot, .elegida-ok .op-letra { border-color: var(--teal); color: var(--teal); background: rgba(45,212,191,.15); }
+  .elegida-mal { border-color: var(--red) !important; background: rgba(255,90,95,.13); opacity: 1; }
+  .elegida-mal .op-dot, .elegida-mal .op-letra { border-color: var(--red); color: var(--red); }
+
+  /* ----------------------------- ITEMS ----------------------------- */
+  .item { display: flex; align-items: center; gap: 12px; background: var(--panel2);
+    border: 1px solid var(--border2); border-radius: 14px; padding: 13px 14px; cursor: pointer;
+    flex-wrap: wrap; transition: border-color .2s, background .2s; }
+  .item:hover { border-color: var(--amber); }
+  .item-ic { width: 40px; height: 40px; flex: none; border-radius: 11px; display: flex; align-items: center;
+    justify-content: center; background: #0F1728; border: 1px solid var(--border2); }
+  .item-txt { flex: 1; font-size: 14px; line-height: 1.35; min-width: 0; }
+  .item-check { width: 24px; height: 24px; flex: none; border-radius: 8px; border: 2px solid var(--border2); position: relative; transition: .2s; }
+  .item.marcado { border-color: var(--amber); background: rgba(255,138,61,.08); }
+  .item.marcado .item-check { background: var(--amber); border-color: var(--amber); }
+  .item.marcado .item-check::after { content: "✓"; position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; color: #1A0E05; font-weight: 900; font-size: 15px; }
+  .item.bloq { cursor: default; }
+  .item-ok { border-color: var(--teal) !important; }
+  .item-mal { border-color: var(--red) !important; }
+  .item-nota { flex-basis: 100%; font-size: 12.5px; line-height: 1.5; padding-top: 10px; margin-top: 2px;
+    border-top: 1px dashed var(--border2); color: var(--muted); }
+  .item-nota b { color: var(--text); }
+  .item-nota.es-mue b { color: var(--teal); } .item-nota.no-mue b { color: var(--gold); }
+
+  /* --------------------------- FEEDBACK ---------------------------- */
+  .feedback { border-radius: 16px; padding: 15px 16px; margin: 4px 0 6px; animation: entra .35s ease both; }
+  .fb-ok { background: linear-gradient(180deg, rgba(45,212,191,.14), rgba(45,212,191,.05)); border: 1px solid rgba(45,212,191,.5); }
+  .fb-mal { background: linear-gradient(180deg, rgba(255,197,61,.13), rgba(255,197,61,.04)); border: 1px solid rgba(255,197,61,.45); }
+  .fb-cab { font-weight: 800; font-size: 15px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+  .fb-ok .fb-cab { color: var(--teal); } .fb-mal .fb-cab { color: var(--gold); }
+  .fb-delta { font-size: 12px; font-weight: 800; padding: 2px 9px; border-radius: 999px;
+    background: rgba(255,255,255,.08); color: var(--text); font-variant-numeric: tabular-nums; }
+  .feedback p { font-size: 14px; line-height: 1.55; margin: 0 0 12px; color: #D4DCEA; }
+
+  .quiz-badge { display: inline-block; font-size: 10px; font-weight: 900; letter-spacing: 1.5px;
+    color: var(--violet); background: rgba(155,123,255,.14); border: 1px solid rgba(155,123,255,.4);
+    padding: 4px 10px; border-radius: 6px; margin-bottom: 10px; }
+
+  /* ----------------------------- FINAL ----------------------------- */
+  .final-hero { position: relative; height: 190px; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 40%, #2A2440, #141C2E); overflow: hidden; }
+  .final-glow { position: absolute; width: 220px; height: 220px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,138,61,.5), transparent 65%); animation: pulso 3s ease-in-out infinite; }
+  @keyframes pulso { 0%,100% { transform: scale(.85); opacity:.5;} 50% { transform: scale(1.1); opacity:.9;} }
+  .final-escudo { position: relative; z-index: 2; filter: drop-shadow(0 8px 24px rgba(255,107,26,.5));
+    animation: aparece-escudo .7s cubic-bezier(.2,1.4,.4,1) both; }
+  @keyframes aparece-escudo { from { transform: scale(.3) rotate(-20deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  .final-hero.gris { filter: grayscale(.7) brightness(.8); }
+  .resultado { display: flex; gap: 8px; justify-content: center; margin: 14px 0; }
+  .metrica { flex: 1; background: var(--panel2); border: 1px solid var(--border2); border-radius: 14px;
+    padding: 12px 6px; text-align: center; }
+  .metrica b { font-size: 22px; font-weight: 900; display: block; font-variant-numeric: tabular-nums;
+    background: linear-gradient(180deg, #FFF, #B9C6DC); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .metrica small { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .insignia { display: flex; align-items: center; gap: 12px; justify-content: center; text-align: left;
+    background: linear-gradient(135deg, rgba(255,197,61,.15), rgba(255,107,26,.08));
+    border: 1px solid rgba(255,197,61,.5); border-radius: 14px; padding: 12px 16px; margin: 4px 0 14px;
+    font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 700; }
+  .insignia b { display: block; font-size: 15px; color: var(--gold); text-transform: none; letter-spacing: 0; }
+  .ins-medalla { font-size: 30px; animation: latido 2s ease-in-out infinite; }
+  .prox { text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 14px; padding: 12px;
+    background: var(--panel); border: 1px dashed var(--border2); border-radius: 12px; }
+
+  .confeti { position: absolute; inset: 0; pointer-events: none; z-index: 40; }
+
+  /* Diálogo de confirmación propio (sustituye a confirm() nativo) */
+  .modal-ov { position: absolute; inset: 0; z-index: 60; display: flex; align-items: center;
+    justify-content: center; padding: 24px; background: rgba(5,7,14,.6);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); opacity: 0; transition: opacity .2s; }
+  .modal-ov.visible { opacity: 1; }
+  .modal { width: 100%; max-width: 320px; background: linear-gradient(180deg, var(--panel), #111827);
+    border: 1px solid var(--border2); border-radius: 20px; padding: 20px; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6); transform: scale(.92); transition: transform .2s; }
+  .modal-ov.visible .modal { transform: scale(1); }
+  .modal h3 { margin: 0 0 8px; font-size: 18px; font-weight: 800; }
+  .modal p { margin: 0 0 18px; font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+  .modal-btns { display: flex; gap: 10px; }
+  .modal-btns .btn { justify-content: center; font-weight: 700; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, #app > * { animation: none !important; transition: none !important; }
+  }
+  .btn:focus-visible, .item:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  /* ===================== CAPÍTULO C · SIMULACIÓN ===================== */
+  /* Asignar dueños */
+  .ctrl-list { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+  .ctrl-card { display:flex; flex-direction:column; gap:4px; text-align:left; font-family:var(--font); cursor:pointer;
+    background:var(--panel2); border:1px solid var(--border2); border-radius:14px; padding:12px 14px; transition:border-color .2s, background .2s; }
+  .ctrl-card.sel { border-color:var(--gold); box-shadow:0 0 0 2px rgba(255,197,61,.35); }
+  .ctrl-card.ok { border-color:var(--teal); background:rgba(45,212,191,.12); }
+  .ctrl-card.mal { border-color:var(--red); background:rgba(255,90,95,.12); }
+  .ctrl-t { font-size:14px; font-weight:700; color:var(--text); }
+  .ctrl-d { font-size:12.5px; color:var(--muted); }
+  .ctrl-d.puesto { color:var(--gold); font-weight:700; }
+  .roster-lbl { font-size:12px; color:var(--amber); margin-bottom:8px; font-weight:600; }
+  .roster { display:flex; flex-direction:column; gap:8px; }
+  .persona { text-align:left; font-family:var(--font); cursor:pointer; display:flex; flex-direction:column;
+    background:#0F1728; border:1px solid var(--border2); border-radius:12px; padding:10px 13px; transition:border-color .2s, transform .08s; }
+  .persona.activo:hover { border-color:var(--amber); }
+  .persona:active { transform:scale(.98); }
+  .persona b { font-size:13.5px; }
+  .persona small { font-size:11px; color:var(--muted); }
+
+  /* Estándares (sliders) */
+  .std-list { display:flex; flex-direction:column; gap:20px; }
+  .std-fila { background:#0F1728; border:1px solid var(--border2); border-radius:14px; padding:12px 14px; }
+  .std-fila.ok { border-color:var(--teal); } .std-fila.mal { border-color:var(--red); }
+  .std-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .std-top b { font-size:13.5px; }
+  .std-val { font-size:13px; font-weight:800; color:var(--gold); background:rgba(255,197,61,.12); border:1px solid rgba(255,197,61,.4); border-radius:8px; padding:3px 10px; }
+  .slider { width:100%; -webkit-appearance:none; appearance:none; height:6px; border-radius:6px; background:#26314D; outline:none; }
+  .slider::-webkit-slider-thumb { -webkit-appearance:none; width:26px; height:26px; border-radius:50%;
+    background:linear-gradient(180deg,var(--amber),var(--amber2)); border:2px solid #1A0E05; cursor:pointer; box-shadow:0 2px 10px rgba(255,107,26,.5); }
+  .slider::-moz-range-thumb { width:24px; height:24px; border-radius:50%; background:var(--amber); border:2px solid #1A0E05; cursor:pointer; }
+  .std-escala { display:flex; justify-content:space-between; margin-top:8px; }
+  .std-escala span { font-size:9px; color:var(--muted); flex:1; text-align:center; }
+  .std-nota { margin-top:10px; font-size:12px; line-height:1.45; padding-top:8px; border-top:1px dashed var(--border2); }
+  .std-nota.ok { color:#9EE8D8; } .std-nota.mal { color:#FFC08A; }
+
+  /* Simulación de turno */
+  .turno-cab { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .turno-kpi { font-size:20px; font-weight:900; color:var(--teal); }
+  .turno-prog { height:10px; background:#0A0F1C; border:1px solid var(--border2); border-radius:6px; overflow:hidden; }
+  .turno-prog-fill { height:100%; background:linear-gradient(90deg,var(--gold),var(--amber2)); width:0; transition:width .1s linear; }
+  .turno-prog-lbl { font-size:11px; color:var(--muted); margin:6px 0 14px; text-align:center; }
+  .gauges { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+  .gauge { background:#0F1728; border:1.5px solid var(--border2); border-radius:14px; padding:11px 13px; transition:border-color .25s, background .25s; cursor:pointer; }
+  .gauge-top { display:flex; justify-content:space-between; align-items:center; }
+  .gauge-top b { font-size:13.5px; }
+  .gauge-pill { font-size:10px; font-weight:800; letter-spacing:.5px; padding:3px 9px; border-radius:999px; }
+  .gauge-sub { font-size:11px; color:var(--muted); margin:2px 0 8px; }
+  .gauge-bar { height:7px; border-radius:5px; background:#0A0F1C; overflow:hidden; }
+  .gauge-fill { height:100%; width:100%; border-radius:5px; transition:width .3s, background .3s; }
+  .gauge.est-ok { border-color:rgba(45,212,191,.5); }
+  .gauge.est-ok .gauge-pill { background:rgba(45,212,191,.18); color:var(--teal); }
+  .gauge.est-ok .gauge-fill { background:var(--teal); }
+  .gauge.est-alerta { border-color:var(--gold); background:rgba(255,197,61,.08); animation:pulsoAlerta 1s ease-in-out infinite; }
+  .gauge.est-alerta .gauge-pill { background:rgba(255,197,61,.2); color:var(--gold); }
+  .gauge.est-alerta .gauge-fill { background:var(--gold); width:55%; }
+  .gauge.est-falla { border-color:var(--red); background:rgba(255,90,95,.1); }
+  .gauge.est-falla .gauge-pill { background:rgba(255,90,95,.2); color:var(--red); }
+  .gauge.est-falla .gauge-fill { background:var(--red); width:15%; }
+  @keyframes pulsoAlerta { 0%,100%{box-shadow:0 0 0 0 rgba(255,197,61,.4)} 50%{box-shadow:0 0 0 5px rgba(255,197,61,0)} }
+  .alerta { border-radius:14px; padding:12px 14px; background:linear-gradient(180deg,rgba(255,197,61,.14),rgba(255,138,61,.06));
+    border:1px solid var(--gold); display:flex; flex-direction:column; gap:10px; animation:entra .3s ease both; }
+  .alerta.vacia { background:var(--panel); border:1px dashed var(--border2); color:var(--muted); text-align:center; font-size:13px; display:block; }
+  .alerta-txt b { display:block; font-size:14px; color:var(--gold); }
+  .alerta-txt span { font-size:11.5px; color:var(--muted); }
+  .alerta-cd { height:6px; background:#0A0F1C; border-radius:4px; overflow:hidden; }
+  .alerta-cd-fill { height:100%; background:var(--amber2); transition:width .1s linear; }
+  .alerta-btn { margin-top:0; padding:11px; }
+  .turno-fin { text-align:center; }
+  .fin-ico { font-size:54px; margin-bottom:4px; }
+  .fin-ico.perfecto { animation:latido 1.6s ease-in-out infinite; }
+</style>
+</head>
+<body>
+  <div class="telefono">
+    <div id="hud"></div>
+    <main id="app"></main>
+  </div>
+  <script>
+/*
+ * Contenido del Capítulo C — "Centro de Operaciones"
+ * Pasos 5 y 6 del proceso CCM de la guía ICMM 2026:
+ *   Paso 5 — Definir desempeño y reporte (estándar + verificación de cada control)
+ *   Paso 6 — Asignar responsabilidades (dueños de control en el nivel correcto)
+ *
+ * Técnica de comunicación: SIMULACIÓN DE GESTIÓN (dashboard). Mecánicas:
+ *   asignar  — emparejar cada control crítico con su dueño (nivel correcto)
+ *   estandar — fijar con deslizadores la frecuencia de verificación de cada control
+ *   turno    — simulación en vivo: responder alertas y mantener los controles en verde
+ * Tipos de nodo: portada | escena | asignar | estandar | turno | final
+ */
+window.CAPITULO_C = {
+  id: "cap-c",
+  titulo: "Guardianes del Control",
+  subtitulo: "Capítulo C · Centro de Operaciones",
+  inicio: "portada",
+  indicadorInicial: 65,
+
+  personajes: { rivas: { nombre: "Ing. Rivas", rol: "Mentora en Controles Críticos" } },
+
+  nodos: {
+    portada: {
+      tipo: "portada",
+      titulo: "Centro de Operaciones",
+      subtitulo: "Capítulo C · Estándares de desempeño y dueños",
+      capitulo: "Pasos 5 y 6 · Guía ICMM 2026",
+      persona: "rivas",
+      dialogo:
+        "Ya tienes los controles críticos. Ahora hay que hacerlos VIVIR en la operación: " +
+        "cada uno necesita un dueño responsable y un estándar verificable. Después lo " +
+        "pondremos a prueba en un turno real. Bienvenid@ al tablero.",
+      boton: "Abrir el tablero",
+      siguiente: "intro"
+    },
+
+    intro: {
+      tipo: "escena",
+      ilustracion: "centro",
+      titulo: "El tablero de Cerro Alto",
+      cuerpo:
+        "Tus 3 controles críticos ya están en el panel: Segregación física, Sensores de " +
+        "proximidad y Plan de respuesta. Un control sin dueño ni estándar es solo una " +
+        "buena intención.\n\nPrimero: ¿quién responde por cada uno?",
+      persona: "rivas",
+      dialogo: "Paso 6: asignar dueños. La clave es el NIVEL correcto: alguien de la línea con autoridad.",
+      siguiente: "paso6_intro"
+    },
+
+    // ================= PASO 6 · ASIGNAR DUEÑOS =================
+    paso6_intro: {
+      tipo: "escena",
+      ilustracion: "org",
+      titulo: "El dueño correcto",
+      cuerpo:
+        "El dueño de un control crítico debe estar en el nivel con AUTORIDAD para " +
+        "garantizarlo y recursos para mantenerlo. No es quien ejecuta la tarea ni quien " +
+        "solo asesora: es quien responde por su desempeño.",
+      persona: "rivas",
+      dialogo: "Toca un control, luego su dueño. Ojo con los distractores: ejecutar o asesorar no es ser dueño.",
+      siguiente: "asignar_duenos"
+    },
+
+    asignar_duenos: {
+      tipo: "asignar",
+      titulo: "Asigna los dueños",
+      controles: [
+        { id: "seg", t: "Segregación física peatón–vehículo", dueno: "super",
+          ok: "El Superintendente de Operaciones controla el layout y las reglas de tránsito: tiene la autoridad." },
+        { id: "sen", t: "Sensores de proximidad con alerta", dueno: "mant",
+          ok: "El Jefe de Mantenimiento responde por el sistema técnico y su calibración." },
+        { id: "resp", t: "Plan de respuesta y rescate", dueno: "emerg",
+          ok: "El Jefe de Respuesta a Emergencias es dueño del plan y de los simulacros." }
+      ],
+      duenos: [
+        { id: "super", nombre: "Superint. de Operaciones", nivel: "Línea · con autoridad" },
+        { id: "mant", nombre: "Jefe de Mantenimiento", nivel: "Línea · técnico" },
+        { id: "emerg", nombre: "Jefe de Respuesta a Emergencias", nivel: "Línea · emergencias" },
+        { id: "oper", nombre: "Operador de camión", nivel: "Ejecuta la tarea" },
+        { id: "analista", nombre: "Analista de Seguridad", nivel: "Asesora · sin autoridad de línea" }
+      ],
+      motivoMal:
+        "Ese no es el dueño adecuado. El operador ejecuta y el analista asesora, pero el " +
+        "dueño debe estar en la línea, con autoridad y recursos para garantizar el control.",
+      exito: "Cada control crítico tiene un dueño con autoridad real. Así se sostiene la rendición de cuentas.",
+      siguiente: "paso5_intro"
+    },
+
+    // ================= PASO 5 · ESTÁNDARES DE VERIFICACIÓN =================
+    paso5_intro: {
+      tipo: "escena",
+      ilustracion: "medidor",
+      titulo: "El estándar de desempeño",
+      cuerpo:
+        "Cada control crítico necesita un estándar VERIFICABLE: qué se mide y CADA CUÁNTO " +
+        "se comprueba. Demasiado espaciado, no detecta fallas a tiempo; demasiado " +
+        "frecuente, se vuelve insostenible.\n\nFija la frecuencia de verificación de cada control.",
+      persona: "rivas",
+      dialogo: "Mueve cada deslizador a la frecuencia correcta según el tipo de control.",
+      siguiente: "set_estandares"
+    },
+
+    set_estandares: {
+      tipo: "estandar",
+      titulo: "Fija los estándares de verificación",
+      escala: ["Cada turno", "Semanal", "Mensual", "Trimestral", "Anual"],
+      controles: [
+        { id: "sen", t: "Sensores de proximidad", target: 0,
+          nota: "Prueba funcional CADA TURNO: un sensor tecnológico puede fallar en cualquier momento." },
+        { id: "seg", t: "Segregación física (barreras)", target: 2,
+          nota: "Inspección MENSUAL: una barrera física se degrada lento; verificar su integridad periódicamente." },
+        { id: "resp", t: "Plan de respuesta y rescate", target: 3,
+          nota: "Simulacro TRIMESTRAL: probar la respuesta con la frecuencia suficiente para mantener la destreza." }
+      ],
+      exito: "Estándares definidos y verificables. Ahora cada control tiene un pulso medible.",
+      siguiente: "turno_intro"
+    },
+
+    // ================= SIMULACIÓN DE TURNO =================
+    turno_intro: {
+      tipo: "escena",
+      ilustracion: "centro",
+      titulo: "Prueba de turno",
+      cuerpo:
+        "Todo configurado. Ahora la prueba real: un turno de operación. Los controles se " +
+        "monitorean en vivo y aparecerán ALERTAS (verificación vencida o desviación). " +
+        "Responde a tiempo para mantenerlos en verde.\n\n" +
+        "Si una alerta se ignora, el control cae en rojo: un evento a punto de escapar.",
+      persona: "rivas",
+      dialogo: "Toca «Responder» en cada alerta antes de que se agote el tiempo. ¡Cuida tu turno!",
+      siguiente: "turno"
+    },
+
+    turno: {
+      tipo: "turno",
+      titulo: "Turno en curso",
+      duracionSeg: 26,
+      controles: [
+        { id: "seg", t: "Segregación física", dueno: "Superint. Operaciones" },
+        { id: "sen", t: "Sensores de proximidad", dueno: "Jefe Mantenimiento" },
+        { id: "resp", t: "Plan de respuesta", dueno: "Jefe Emergencias" }
+      ],
+      alertas: [
+        "Verificación de turno vencida",
+        "Desviación detectada",
+        "Reporte de desempeño pendiente",
+        "Prueba funcional fuera de rango"
+      ],
+      siguiente: "final"
+    },
+
+    // ------------------------------------------------------------ FINAL
+    final: {
+      tipo: "final",
+      variante: "exito",
+      ilustracion: "centro",
+      titulo: "¡Turno superado!",
+      cuerpo:
+        "Cerraste el ciclo: cada control crítico tiene dueño, estándar verificable y " +
+        "respondió en operación real. Cerro Alto ya no solo sabe cuáles controles importan: " +
+        "los mantiene vivos.\n\nCon esto completas la implementación (Pasos 5–6). Lo que " +
+        "sigue es el Paso 7–9: verificación en terreno, reporte y respuesta ante desempeño " +
+        "inadecuado — el corazón de la ruta de supervisores.",
+      persona: "rivas",
+      dialogo:
+        "Esto es gestión de controles críticos de verdad: no un documento, sino un sistema " +
+        "vivo con dueños y pulso. Excelente turno, Guardián.",
+      insignia: "Gestor del Tablero",
+      umbralAprobacion: 0
+    }
+  }
+};
+
+</script>
+  <script>
+/*
+ * Motor del Capítulo C — SIMULACIÓN DE GESTIÓN (dashboard).
+ * Tipos de nodo: portada | escena | asignar | estandar | turno | final
+ * Comparte el lenguaje visual de los capítulos A y B (avatar, HUD, confeti).
+ */
+(function () {
+  "use strict";
+
+  const cap = window.CAPITULO_C;
+  const app = document.getElementById("app");
+  const hud = document.getElementById("hud");
+  const CLAVE = "ccm_cap_c_estado_v1";
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let simTimer = null; // intervalo de la simulación de turno (se limpia al navegar)
+
+  let estado = cargar() || nuevoEstado();
+  function nuevoEstado() { return { nodo: cap.inicio, indicador: cap.indicadorInicial, xp: 0, mostrado: {} }; }
+  const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) {} };
+  function cargar() { try { return JSON.parse(localStorage.getItem(CLAVE)); } catch (e) { return null; } }
+  const clamp = (n) => Math.max(0, Math.min(100, n));
+  const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+  const persona = (id) => (id ? cap.personajes[id] : null);
+  const nivel = (xp) => Math.floor(xp / 100) + 1;
+
+  /* ============================ SVG ============================ */
+  function rivas(size) {
+    size = size || 96;
+    return `<svg viewBox="0 0 120 120" width="${size}" height="${size}" aria-label="Ingeniera Rivas">
+      <defs>
+        <radialGradient id="rbg" cx="50%" cy="38%" r="70%"><stop offset="0%" stop-color="#243154"/><stop offset="100%" stop-color="#0E1424"/></radialGradient>
+        <linearGradient id="rhelm" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFC24B"/><stop offset="100%" stop-color="#F5820A"/></linearGradient>
+        <linearGradient id="rskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F0C09A"/><stop offset="100%" stop-color="#E0A579"/></linearGradient>
+      </defs>
+      <circle cx="60" cy="60" r="58" fill="url(#rbg)"/>
+      <path d="M40 108 q20 -20 40 0 v12 h-40 z" fill="#FF6B1A"/><rect x="40" y="103" width="40" height="6" fill="#DCE7F5" opacity=".85"/>
+      <path d="M22 120 q6 -26 38 -26 q32 0 38 26 z" fill="#FF7A22"/><path d="M52 96 h16 l-3 10 h-10 z" fill="#DCE7F5" opacity=".7"/>
+      <path d="M32 62 q0 -34 28 -34 q28 0 28 34 q0 20 -6 30 q-4 -18 -22 -18 q-18 0 -22 18 q-6 -10 -6 -30z" fill="#2A2118"/>
+      <path d="M40 58 q0 34 20 34 q20 0 20 -34 q0 -20 -20 -20 q-20 0 -20 20z" fill="url(#rskin)"/>
+      <circle cx="40" cy="64" r="4.5" fill="#E0A579"/><circle cx="80" cy="64" r="4.5" fill="#E0A579"/>
+      <path d="M30 52 q0 -30 30 -30 q30 0 30 30 q0 3 -2 4 h-56 q-2 -1 -2 -4z" fill="url(#rhelm)"/>
+      <path d="M28 52 h64 q3 0 3 4 t-3 4 h-64 q-3 0 -3 -4 t3 -4z" fill="#F5820A"/>
+      <path d="M40 24 q20 -8 40 0 l-1 6 q-19 -7 -38 0z" fill="#FFD98A" opacity=".8"/>
+      <rect x="55" y="21" width="10" height="9" rx="2" fill="#3A465A"/><circle cx="60" cy="26" r="3.2" fill="#BFE9FF"/>
+      <path d="M45 58 q6 -4 12 -1" stroke="#3A2A1C" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <path d="M63 57 q6 -3 12 1" stroke="#3A2A1C" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <ellipse cx="51" cy="65" rx="4.4" ry="4.8" fill="#fff"/><circle cx="52" cy="66" r="2.4" fill="#2A2118"/>
+      <ellipse cx="69" cy="65" rx="4.4" ry="4.8" fill="#fff"/><circle cx="68" cy="66" r="2.4" fill="#2A2118"/>
+      <circle cx="52.8" cy="65" r=".8" fill="#fff"/><circle cx="68.8" cy="65" r=".8" fill="#fff"/>
+      <path d="M60 66 q2 6 -1 9" stroke="#CE8F60" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M50 79 q10 9 20 0" stroke="#B4653C" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M52 80 q8 6 16 0z" fill="#fff"/>
+      <circle cx="46" cy="74" r="3.5" fill="#F1A177" opacity=".5"/><circle cx="74" cy="74" r="3.5" fill="#F1A177" opacity=".5"/>
+    </svg>`;
+  }
+
+  const S = {};
+  S.centro = () => `<svg viewBox="0 0 400 210" preserveAspectRatio="xMidYMid slice">
+    <defs><radialGradient id="cg" cx="50%" cy="35%" r="65%"><stop offset="0%" stop-color="#12233F"/><stop offset="100%" stop-color="#0A1220"/></radialGradient></defs>
+    <rect width="400" height="210" fill="url(#cg)"/>
+    <g stroke="#182842" stroke-width="1"><path d="M0 70 H400 M0 140 H400 M100 0 V210 M200 0 V210 M300 0 V210"/></g>
+    <!-- pantallas -->
+    <g>
+      <rect x="30" y="40" width="100" height="60" rx="6" fill="#0F1D33" stroke="#2DD4BF" stroke-width="1.5"/>
+      <polyline points="40,86 60,70 78,78 100,54 120,60" fill="none" stroke="#2DD4BF" stroke-width="2.5"/>
+      <rect x="150" y="40" width="100" height="60" rx="6" fill="#0F1D33" stroke="#FF8A3D" stroke-width="1.5"/>
+      <g transform="translate(200 70)"><path d="M-30 0 a30 30 0 0 1 60 0" fill="none" stroke="#26314D" stroke-width="6"/><path d="M-30 0 a30 30 0 0 1 42 -21" fill="none" stroke="#FF8A3D" stroke-width="6"/><line x1="0" y1="0" x2="14" y2="-14" stroke="#FFC53D" stroke-width="2.5"/></g>
+      <rect x="270" y="40" width="100" height="60" rx="6" fill="#0F1D33" stroke="#9B7BFF" stroke-width="1.5"/>
+      ${[0,1,2].map(i=>`<rect x="${284+i*28}" y="${86-(i+1)*12}" width="16" height="${(i+1)*12}" rx="2" fill="#9B7BFF" opacity=".7"/>`).join("")}
+    </g>
+    <!-- consola -->
+    <rect x="0" y="150" width="400" height="60" fill="#101E36"/>
+    <g fill="#2DD4BF"><circle cx="60" cy="175" r="5"/><circle cx="90" cy="175" r="5" fill="#FFC53D"/><circle cx="120" cy="175" r="5" fill="#FF5A5F"/></g>
+    <rect x="180" y="168" width="180" height="8" rx="4" fill="#1B2C49"/><rect x="180" y="168" width="120" height="8" rx="4" fill="#2DD4BF"/>
+  </svg>`;
+
+  S.org = () => `<svg viewBox="0 0 400 210" preserveAspectRatio="xMidYMid slice">
+    <rect width="400" height="210" fill="#0F1830"/>
+    <g stroke="#33456B" stroke-width="2" fill="none"><path d="M200 46 V78 M120 110 V78 H280 V110 M200 78 V110"/></g>
+    ${[[200,32,"#FF8A3D"],[120,124,"#2DD4BF"],[200,124,"#FFC53D"],[280,124,"#9B7BFF"]].map(([x,y,c])=>`<g transform="translate(${x} ${y})"><circle r="15" fill="#16223F" stroke="${c}" stroke-width="2.5"/><circle cy="-4" r="5" fill="${c}"/><path d="M-7 8 a7 7 0 0 1 14 0" fill="${c}"/></g>`).join("")}
+  </svg>`;
+
+  S.medidor = () => `<svg viewBox="0 0 400 210" preserveAspectRatio="xMidYMid slice">
+    <rect width="400" height="210" fill="#0F1830"/>
+    ${[80,200,320].map((x,i)=>`<g transform="translate(${x} 110)">
+      <path d="M-46 0 a46 46 0 0 1 92 0" fill="none" stroke="#26314D" stroke-width="12"/>
+      <path d="M-46 0 a46 46 0 0 1 92 0" fill="none" stroke="${["#FF5A5F","#FFC53D","#2DD4BF"][i]}" stroke-width="12" stroke-dasharray="${48+i*30} 999"/>
+      <line x1="0" y1="0" x2="${-20+i*22}" y2="${-38+i*6}" stroke="#EAF0FA" stroke-width="3" stroke-linecap="round"/>
+      <circle r="5" fill="#EAF0FA"/></g>`).join("")}
+  </svg>`;
+
+  const escena = (id) => `<div class="escena">${(S[id] || S.centro)()}<div class="escena-fade"></div></div>`;
+
+  /* ============================ HUD ============================ */
+  function pintarHUD() {
+    const v = clamp(estado.indicador), nv = nivel(estado.xp), xpEn = estado.xp % 100;
+    hud.innerHTML = `
+      <button id="btn-menu" class="hud-menu" title="Reiniciar">↻</button>
+      <div class="hud-perfil">
+        <div class="hud-avatar">${rivas(40)}</div>
+        <div class="hud-nivel">
+          <div class="hud-nivel-top"><span>Nivel ${nv}</span><span class="hud-xp-num">${xpEn}/100 XP</span></div>
+          <div class="hud-xpbar"><div class="hud-xpfill" style="width:${xpEn}%"></div></div>
+        </div>
+      </div>
+      <div class="hud-score ${v>=65?"ok":v>=40?"med":"bajo"}">
+        <svg viewBox="0 0 40 44" width="30" height="33"><path d="M20 2 L37 9 V22 Q37 38 20 42 Q3 38 3 22 V9z" fill="currentColor" opacity=".18" stroke="currentColor" stroke-width="2"/></svg>
+        <div class="hud-score-txt"><b id="score-num">${v}</b><small>Seguridad</small></div>
+      </div>`;
+    document.getElementById("btn-menu").onclick = reiniciar;
+  }
+  function ganar(indDelta, xpDelta) {
+    estado.indicador = clamp(estado.indicador + (indDelta || 0));
+    estado.xp += (xpDelta || 0); guardar(); pintarHUD();
+    if (xpDelta) flotante("+" + xpDelta + " XP");
+  }
+  function flotante(txt) {
+    const el = document.createElement("div"); el.className = "flotante-xp"; el.textContent = txt;
+    hud.appendChild(el); setTimeout(() => el.remove(), 1200);
+  }
+
+  /* ============================ NAV ============================ */
+  const sig = (v) => (typeof v === "function" ? v(estado) : v);
+  function ir(id) { if (simTimer) { clearInterval(simTimer); simTimer = null; } estado.nodo = sig(id); guardar(); render(); }
+
+  function render() {
+    const nodo = cap.nodos[estado.nodo];
+    if (nodo.tipo === "portada") hud.style.display = "none"; else { hud.style.display = "flex"; pintarHUD(); }
+    estado.mostrado[estado.nodo] = true; app.scrollTop = 0;
+    ({ portada: rPortada, escena: rEscena, asignar: rAsignar, estandar: rEstandar, turno: rTurno, final: rFinal }[nodo.tipo] || rEscena)(nodo);
+  }
+
+  function bloqueDialogo(personaId, texto) {
+    if (!texto) return "";
+    const p = persona(personaId);
+    return `<div class="dialogo"><div class="dialogo-av">${rivas(54)}</div>
+      <div class="dialogo-cuerpo"><div class="dialogo-nombre">${esc(p ? p.nombre : "")}<span>${esc(p ? p.rol : "")}</span></div>
+      <div class="dialogo-texto">${esc(texto)}</div></div></div>`;
+  }
+  const card = (inner, cls) => `<div class="card ${cls || ""}">${inner}</div>`;
+  const chipPaso = (t) => t ? `<div class="chip-paso">${esc(t)}</div>` : "";
+  const cabecera = (nodo) => `<div class="card-pad"><h2>${esc(nodo.titulo)}</h2>${nodo.cuerpo ? `<p class="cuerpo">${esc(nodo.cuerpo)}</p>` : ""}</div>`;
+
+  /* ------------------------------- PORTADA ------------------------------- */
+  function rPortada(nodo) {
+    app.innerHTML = `
+      <div class="portada">
+        <div class="portada-cielo">${S.centro()}<div class="dust"></div><div class="dust d2"></div><div class="dust d3"></div></div>
+        <div class="portada-cont">
+          <div class="logo-escudo">
+            <svg viewBox="0 0 80 92" width="86" height="99">
+              <defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFC24B"/><stop offset="100%" stop-color="#FF6B1A"/></linearGradient></defs>
+              <path d="M40 3 L74 16 V40 Q74 74 40 89 Q6 74 6 40 V16z" fill="#0E1424" stroke="url(#lg)" stroke-width="3"/>
+              <path d="M24 62 a16 16 0 0 1 32 0" fill="none" stroke="url(#lg)" stroke-width="4"/>
+              <line x1="40" y1="62" x2="52" y2="46" stroke="#2DD4BF" stroke-width="4" stroke-linecap="round"/><circle cx="40" cy="62" r="4" fill="url(#lg)"/>
+            </svg>
+          </div>
+          <h1 class="portada-titulo">${esc(nodo.titulo)}</h1>
+          <div class="portada-sub">${esc(nodo.subtitulo)}</div>
+          <div class="portada-chip">${esc(nodo.capitulo)}</div>
+          ${bloqueDialogo(nodo.persona, nodo.dialogo)}
+          <button class="btn primario grande" id="jugar">${esc(nodo.boton)} <span>▸</span></button>
+        </div>
+      </div>`;
+    document.getElementById("jugar").onclick = () => ir(nodo.siguiente);
+  }
+
+  function rEscena(nodo) {
+    app.innerHTML =
+      card((nodo.ilustracion ? escena(nodo.ilustracion) : "") +
+        `<div class="card-pad"><h2>${esc(nodo.titulo)}</h2><p class="cuerpo">${esc(nodo.cuerpo)}</p>
+         ${bloqueDialogo(nodo.persona, nodo.dialogo)}</div>`, "con-escena") +
+      `<button class="btn primario" id="continuar">Continuar <span>▸</span></button>`;
+    document.getElementById("continuar").onclick = () => ir(nodo.siguiente);
+  }
+
+  /* ===================== MECÁNICA 1 · ASIGNAR DUEÑOS ==================== */
+  function rAsignar(nodo) {
+    const asign = {}; // controlId -> duenoId
+    let sel = null, resuelto = false;
+    const nombreDueno = (id) => (nodo.duenos.find((d) => d.id === id) || {}).nombre || "";
+
+    function pintar() {
+      const ctrlHTML = nodo.controles.map((c) => {
+        const d = asign[c.id];
+        const cls = resuelto ? (d === c.dueno ? "ok" : "mal") : (sel === c.id ? "sel" : "");
+        return `<button class="ctrl-card ${cls}" data-c="${c.id}">
+          <span class="ctrl-t">${esc(c.t)}</span>
+          <span class="ctrl-d ${d ? "puesto" : ""}">${d ? "👤 " + esc(nombreDueno(d)) : "sin dueño — toca para asignar"}</span></button>`;
+      }).join("");
+      const rosterHTML = nodo.duenos.map((d) =>
+        `<button class="persona ${sel ? "activo" : ""}" data-d="${d.id}"><b>${esc(d.nombre)}</b><small>${esc(d.nivel)}</small></button>`).join("");
+      const completo = nodo.controles.every((c) => asign[c.id]);
+      app.innerHTML = chipPaso("Paso 6 · Asignar dueños") + card(
+        cabecera({ titulo: nodo.titulo, cuerpo: null }) +
+        `<div class="card-pad" style="padding-top:0">
+          <div class="ctrl-list">${ctrlHTML}</div>
+          <div class="roster-lbl">${sel ? "Ahora toca el dueño para «" + esc(nodo.controles.find((c) => c.id === sel).t) + "»" : "Toca un control para asignarle dueño"}</div>
+          <div class="roster">${rosterHTML}</div>
+        </div>`, "") +
+        `<button class="btn primario" id="verificar" ${completo ? "" : "disabled"}>Verificar asignaciones</button>`;
+
+      app.querySelectorAll(".ctrl-card").forEach((b) => b.onclick = () => {
+        if (resuelto) return; const id = b.dataset.c;
+        if (asign[id]) { delete asign[id]; sel = null; } else { sel = sel === id ? null : id; }
+        pintar();
+      });
+      app.querySelectorAll(".persona").forEach((b) => b.onclick = () => {
+        if (resuelto || !sel) return; asign[sel] = b.dataset.d; sel = null; pintar();
+      });
+      const vb = document.getElementById("verificar"); if (vb) vb.onclick = verificar;
+    }
+
+    function verificar() {
+      const bien = nodo.controles.every((c) => asign[c.id] === c.dueno);
+      resuelto = true; pintar();
+      if (!bien) {
+        resuelto = false; ganar(-4, 0);
+        setTimeout(() => {
+          const fb = document.createElement("div"); fb.className = "feedback fb-mal";
+          fb.innerHTML = `<div class="fb-cab">Revisa los dueños</div><p>${esc(nodo.motivoMal)}</p><button class="btn primario" id="reintentar">Ajustar</button>`;
+          app.appendChild(fb); fb.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+          document.getElementById("reintentar").onclick = () => { nodo.controles.forEach((c) => { if (asign[c.id] !== c.dueno) delete asign[c.id]; }); pintar(); };
+        }, 350);
+        return;
+      }
+      ganar(10, 30);
+      setTimeout(() => {
+        const fb = document.createElement("div"); fb.className = "feedback fb-ok";
+        fb.innerHTML = `<div class="fb-cab">✓ Dueños asignados</div><p>${esc(nodo.exito)}</p><button class="btn primario" id="seguir">Continuar <span>▸</span></button>`;
+        app.appendChild(fb); fb.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+        document.getElementById("seguir").onclick = () => ir(nodo.siguiente);
+      }, 350);
+    }
+    pintar();
+  }
+
+  /* ===================== MECÁNICA 2 · ESTÁNDARES (SLIDERS) ============== */
+  function rEstandar(nodo) {
+    const val = {}; nodo.controles.forEach((c) => (val[c.id] = 1));
+    let resuelto = false;
+
+    function pintar() {
+      const filas = nodo.controles.map((c) => {
+        const cls = resuelto ? (val[c.id] === c.target ? "ok" : "mal") : "";
+        return `<div class="std-fila ${cls}">
+          <div class="std-top"><b>${esc(c.t)}</b><span class="std-val">${esc(nodo.escala[val[c.id]])}</span></div>
+          <input type="range" min="0" max="${nodo.escala.length - 1}" step="1" value="${val[c.id]}" data-c="${c.id}" class="slider">
+          <div class="std-escala">${nodo.escala.map((e) => `<span>${esc(e)}</span>`).join("")}</div>
+          ${resuelto ? `<div class="std-nota ${val[c.id] === c.target ? "ok" : "mal"}">${val[c.id] === c.target ? "✓ " : "✗ "}${esc(c.nota)}</div>` : ""}
+        </div>`;
+      }).join("");
+      app.innerHTML = chipPaso("Paso 5 · Estándar de verificación") + card(
+        cabecera({ titulo: nodo.titulo, cuerpo: null }) +
+        `<div class="card-pad" style="padding-top:0"><div class="std-list">${filas}</div></div>`, "") +
+        `<button class="btn primario" id="confirmar">Confirmar estándares</button>`;
+      app.querySelectorAll(".slider").forEach((s) => s.oninput = () => {
+        if (resuelto) return; val[s.dataset.c] = +s.value;
+        s.closest(".std-fila").querySelector(".std-val").textContent = nodo.escala[+s.value];
+      });
+      document.getElementById("confirmar").onclick = confirmar;
+    }
+
+    function confirmar() {
+      const bien = nodo.controles.every((c) => val[c.id] === c.target);
+      resuelto = true; pintar();
+      if (!bien) {
+        resuelto = false; ganar(-4, 0);
+        setTimeout(() => {
+          const fb = document.createElement("div"); fb.className = "feedback fb-mal";
+          fb.innerHTML = `<div class="fb-cab">Ajusta la frecuencia</div><p>Revisa las notas: cada control necesita una frecuencia acorde a cómo puede fallar.</p><button class="btn primario" id="reintentar">Ajustar</button>`;
+          app.appendChild(fb); fb.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+          document.getElementById("reintentar").onclick = pintar;
+        }, 350);
+        return;
+      }
+      ganar(10, 30);
+      setTimeout(() => {
+        const fb = document.createElement("div"); fb.className = "feedback fb-ok";
+        fb.innerHTML = `<div class="fb-cab">✓ Estándares definidos</div><p>${esc(nodo.exito)}</p><button class="btn primario" id="seguir">Continuar <span>▸</span></button>`;
+        app.appendChild(fb); fb.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+        document.getElementById("seguir").onclick = () => ir(nodo.siguiente);
+      }, 350);
+    }
+    pintar();
+  }
+
+  /* ===================== MECÁNICA 3 · SIMULACIÓN DE TURNO =============== */
+  // Se construye el tablero UNA vez y solo se actualizan las partes que cambian
+  // en cada tick (barra de avance, estado de medidores y la alerta activa).
+  function rTurno(nodo) {
+    const ctr = nodo.controles.map((c) => ({ ...c, estado: "ok", tRestante: 0, txtAlerta: "" }));
+    const DUR = Math.round((nodo.duracionSeg || 26) * 10); // ticks de 100ms
+    let progreso = 0, resueltos = 0, incidentes = 0, activa = null, finalizado = false, alertaRender = "init";
+
+    app.innerHTML = card(
+      `<div class="card-pad">
+        <div class="turno-cab"><h2 style="margin:0">${esc(nodo.titulo)}</h2><div class="turno-kpi">🛡 <b id="kpi-seg">${clamp(estado.indicador)}</b></div></div>
+        <div class="turno-prog"><div class="turno-prog-fill" id="prog-fill"></div></div>
+        <div class="turno-prog-lbl" id="prog-lbl"></div>
+        <div class="gauges">${ctr.map((c, i) => `
+          <div class="gauge est-ok" id="g-${i}">
+            <div class="gauge-top"><b>${esc(c.t)}</b><span class="gauge-pill" id="p-${i}">OK</span></div>
+            <div class="gauge-sub">${esc(c.dueno)}</div>
+            <div class="gauge-bar"><div class="gauge-fill"></div></div>
+          </div>`).join("")}</div>
+        <div id="alerta-box"></div>
+      </div>`, "");
+    const progFill = document.getElementById("prog-fill");
+    const progLbl = document.getElementById("prog-lbl");
+    const kpi = document.getElementById("kpi-seg");
+    const alertaBox = document.getElementById("alerta-box");
+
+    function renderAlerta() {
+      const clave = activa == null ? "vacia" : activa + "";
+      if (clave === alertaRender) { // solo actualiza la barra de cuenta atrás
+        if (activa != null) { const f = alertaBox.querySelector(".alerta-cd-fill"); if (f) f.style.width = (ctr[activa].tRestante / 50) * 100 + "%"; }
+        return;
+      }
+      alertaRender = clave;
+      if (activa == null) { alertaBox.innerHTML = `<div class="alerta vacia">Turno estable · vigila el tablero</div>`; return; }
+      alertaBox.innerHTML = `<div class="alerta">
+        <div class="alerta-txt"><b>⚠ ${esc(ctr[activa].txtAlerta)}</b><span>${esc(ctr[activa].t)} · ${esc(ctr[activa].dueno)}</span></div>
+        <div class="alerta-cd"><div class="alerta-cd-fill" style="width:100%"></div></div>
+        <button class="btn primario alerta-btn" data-a="responder">Responder</button></div>`;
+      alertaBox.querySelector('[data-a="responder"]').onclick = responder;
+    }
+    function updateGauges() {
+      ctr.forEach((c, i) => {
+        const g = document.getElementById("g-" + i);
+        const cls = "gauge est-" + c.estado;
+        if (g.className !== cls) g.className = cls;
+        const pill = document.getElementById("p-" + i);
+        const txt = c.estado === "ok" ? "OK" : c.estado === "alerta" ? "ALERTA" : "FALLA";
+        if (pill.textContent !== txt) pill.textContent = txt;
+      });
+    }
+    function pintar() {
+      const pct = Math.min(100, Math.round((progreso / DUR) * 100));
+      progFill.style.width = pct + "%";
+      progLbl.innerHTML = `Avance del turno · ${pct}% &nbsp;·&nbsp; Resueltas ${resueltos} &nbsp;·&nbsp; Fallas ${incidentes}`;
+      kpi.textContent = clamp(estado.indicador);
+      updateGauges(); renderAlerta();
+    }
+
+    function responder() {
+      if (activa == null) return;
+      ctr[activa].estado = "ok"; ctr[activa].tRestante = 0; activa = null; resueltos++;
+      ganar(3, 10); pintar();
+    }
+
+    function tick() {
+      if (finalizado) return;
+      progreso++;
+      if (activa == null && progreso % 24 === 0 && progreso < DUR - 12) {
+        const sanos = ctr.map((c, i) => ({ c, i })).filter((o) => o.c.estado === "ok");
+        if (sanos.length) {
+          const o = sanos[(Math.random() * sanos.length) | 0];
+          o.c.estado = "alerta"; o.c.tRestante = 50;
+          o.c.txtAlerta = nodo.alertas[(Math.random() * nodo.alertas.length) | 0];
+          activa = o.i;
+        }
+      }
+      if (activa != null) {
+        ctr[activa].tRestante--;
+        if (ctr[activa].tRestante <= 0) { ctr[activa].estado = "falla"; incidentes++; ganar(-7, 0); activa = null; }
+      }
+      if (progreso >= DUR) { finalizado = true; clearInterval(simTimer); simTimer = null; return finTurno(); }
+      pintar();
+    }
+
+    function finTurno() {
+      const v = clamp(estado.indicador);
+      app.innerHTML = card(
+        `<div class="card-pad turno-fin">
+          <div class="fin-ico ${incidentes === 0 ? "perfecto" : ""}">${incidentes === 0 ? "🏆" : "✅"}</div>
+          <h2 style="text-align:center">Turno completado</h2>
+          <div class="resultado">
+            <div class="metrica"><b>${resueltos}</b><small>Alertas resueltas</small></div>
+            <div class="metrica"><b>${incidentes}</b><small>Fallas</small></div>
+            <div class="metrica"><b>${v}</b><small>Seguridad</small></div>
+          </div>
+          <p class="cuerpo">${incidentes === 0
+            ? "Turno impecable: ningún control cayó en rojo. Así se ve un sistema de controles críticos vivo y verificado."
+            : "Turno cerrado. Cada alerta ignorada fue un control crítico degradado: en la vida real, un evento a punto de escapar. Repite para afinar tu respuesta."}</p>
+        </div>`, "") +
+        `<button class="btn primario" id="seguir">Cerrar turno <span>▸</span></button>`;
+      document.getElementById("seguir").onclick = () => ir(nodo.siguiente);
+    }
+
+    pintar();
+    if (simTimer) clearInterval(simTimer);
+    simTimer = setInterval(tick, 100);
+  }
+
+  /* -------------------------------- FINAL ------------------------------- */
+  function rFinal(nodo) {
+    const v = clamp(estado.indicador);
+    app.innerHTML = card(
+      escena(nodo.ilustracion) +
+      `<div class="card-pad">
+        <h2 style="text-align:center">${esc(nodo.titulo)}</h2>
+        <div class="resultado">
+          <div class="metrica"><b>${v}</b><small>Seguridad</small></div>
+          <div class="metrica"><b>Nv ${nivel(estado.xp)}</b><small>Nivel</small></div>
+          <div class="metrica"><b>${estado.xp}</b><small>XP total</small></div>
+        </div>
+        ${nodo.insignia ? `<div class="insignia"><span class="ins-medalla">🏅</span> Insignia obtenida<b>${esc(nodo.insignia)}</b></div>` : ""}
+        <p class="cuerpo">${esc(nodo.cuerpo)}</p>
+        ${bloqueDialogo(nodo.persona, nodo.dialogo)}
+      </div>`, "con-escena") +
+      `<button class="btn primario" id="reiniciar-final">Volver a jugar</button>
+       <div class="prox">🔒 Próximamente · Capítulo D — «Verificación en terreno y respuesta» (Pasos 7–9)</div>`;
+    document.getElementById("reiniciar-final").onclick = reiniciarDirecto;
+    if (!reduce) confeti();
+  }
+
+  /* ------------------------------ CONFETI ------------------------------- */
+  function confeti() {
+    const cv = document.createElement("canvas"); cv.className = "confeti"; app.appendChild(cv);
+    const ctx = cv.getContext("2d");
+    const w = cv.width = app.clientWidth, h = cv.height = app.clientHeight;
+    const cols = ["#FFC24B", "#FF6B1A", "#2DD4BF", "#9B7BFF", "#EAF0FA"];
+    const P = Array.from({ length: 90 }, () => ({
+      x: Math.random() * w, y: -20 - Math.random() * h * 0.4, s: 4 + Math.random() * 5,
+      vy: 2 + Math.random() * 3, vx: -1 + Math.random() * 2, c: cols[(Math.random() * cols.length) | 0],
+      r: Math.random() * 6, vr: -0.2 + Math.random() * 0.4
+    }));
+    let t = 0;
+    (function loop() {
+      t++; ctx.clearRect(0, 0, w, h);
+      P.forEach((p) => { p.x += p.vx; p.y += p.vy; p.r += p.vr;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c;
+        ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 1.6); ctx.restore(); });
+      if (t < 180) requestAnimationFrame(loop); else cv.remove();
+    })();
+  }
+
+  /* ------------------------------ RESET ------------------------------- */
+  function reiniciarDirecto() { if (simTimer) { clearInterval(simTimer); simTimer = null; } try { localStorage.removeItem(CLAVE); } catch (e) {} estado = nuevoEstado(); guardar(); render(); }
+  function reiniciar() {
+    const ov = document.createElement("div"); ov.className = "modal-ov";
+    ov.innerHTML = `<div class="modal"><h3>¿Reiniciar el capítulo?</h3><p>Perderás el progreso de esta partida.</p>
+      <div class="modal-btns"><button class="btn" id="m-no">Cancelar</button><button class="btn primario" id="m-si">Reiniciar</button></div></div>`;
+    document.querySelector(".telefono").appendChild(ov);
+    requestAnimationFrame(() => ov.classList.add("visible"));
+    const cerrar = () => ov.remove();
+    ov.addEventListener("click", (e) => { if (e.target === ov) cerrar(); });
+    ov.querySelector("#m-no").onclick = cerrar;
+    ov.querySelector("#m-si").onclick = () => { cerrar(); reiniciarDirecto(); };
+  }
+
+  render();
+})();
+
+</script>
+</body>
+</html>
