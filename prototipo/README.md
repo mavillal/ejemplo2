@@ -1,14 +1,23 @@
-# Prototipo jugable — Capítulo A
+# Prototipo jugable — «Guardianes del Control»
 
-Demostración del concepto de «Guardianes del Control», el juego de entrenamiento en
-Gestión de Controles Críticos (guía ICMM 2026). Este prototipo implementa el
-**Capítulo A — Fundamentos y planificación** (Pasos 1 y 2 del proceso CCM).
+Demostración del concepto del juego de entrenamiento en Gestión de Controles Críticos
+(guía ICMM 2026). Dos capítulos jugables, cada uno con una técnica de comunicación
+distinta:
+
+- **Capítulo A — Fundamentos y planificación** (Pasos 1–2): `index.html`.
+  Simulación de **narrativa ramificada** (árbol de decisiones): cada elección abre un
+  camino distinto, con consecuencias diferidas y tres desenlaces.
+- **Capítulo B — La Sala de Controles Críticos** (Pasos 3–4): `capitulo-b.html`.
+  **Escape room**: para salir de una sala sellada hay que resolver candados con mecánicas
+  de *manipulación* (no de alternativas): armar el bowtie clasificando controles, filtrar
+  los controles críticos, completar la definición con fichas y abrir la puerta con un
+  teclado numérico usando el código revelado.
 
 ## Cómo probarlo
 
-Abre `index.html` en cualquier navegador (doble clic; funciona offline, sin servidor).
-Está diseñado en formato vertical de teléfono; en escritorio se muestra dentro de un
-marco tipo móvil.
+Abre `index.html` (Capítulo A) o `capitulo-b.html` (Capítulo B) en cualquier navegador
+(doble clic; funciona offline, sin servidor). Diseñado en formato vertical de teléfono;
+en escritorio se muestra dentro de un marco tipo móvil.
 
 ## Qué demuestra
 
