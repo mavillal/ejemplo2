@@ -1,3 +1,10 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0A0E1A">
+<title>Guardianes del Control — Capítulo C</title>
 <style>
   /* Juego móvil: identidad cinematográfica oscura (single-theme intencional). */
   :root {
@@ -50,11 +57,12 @@
     backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4);
     border-bottom: 1px solid rgba(120,150,220,.12);
   }
+  .hud-btns { order: 3; display: flex; gap: 6px; }
   .hud-menu {
-    order: 3; width: 34px; height: 34px; flex: none; border-radius: 11px; cursor: pointer;
+    width: 34px; height: 34px; flex: none; border-radius: 11px; cursor: pointer;
     background: var(--panel2); border: 1px solid var(--border); color: var(--muted); font-size: 16px;
   }
-  .hud-menu:active { transform: rotate(-90deg); }
+  .hud-menu:active { transform: scale(.88); }
   .hud-perfil { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
   .hud-avatar { width: 40px; height: 40px; border-radius: 50%; flex: none; overflow: hidden;
     border: 2px solid var(--amber); box-shadow: 0 0 14px rgba(255,138,61,.4); }
@@ -322,13 +330,13 @@
   .fin-ico { font-size:54px; margin-bottom:4px; }
   .fin-ico.perfecto { animation:latido 1.6s ease-in-out infinite; }
 </style>
-
-<div class="telefono">
+</head>
+<body>
+  <div class="telefono">
     <div id="hud"></div>
     <main id="app"></main>
   </div>
-
-<script>
+  <script>
 /*
  * Contenido del Capítulo C — "Centro de Operaciones"
  * Pasos 5 y 6 del proceso CCM de la guía ICMM 2026:
@@ -503,14 +511,13 @@ window.CAPITULO_C = {
 };
 
 </script>
-
-<script>
+  <script>
 /*
  * Motor del Capítulo C — SIMULACIÓN DE GESTIÓN (dashboard).
  * Tipos de nodo: portada | escena | asignar | estandar | turno | final
  * Comparte el lenguaje visual de los capítulos A y B (avatar, HUD, confeti).
  */
-(function () {
+function iniciarMotorC(onHome) {
   "use strict";
 
   const cap = window.CAPITULO_C;
@@ -600,7 +607,10 @@ window.CAPITULO_C = {
   function pintarHUD() {
     const v = clamp(estado.indicador), nv = nivel(estado.xp), xpEn = estado.xp % 100;
     hud.innerHTML = `
-      <button id="btn-menu" class="hud-menu" title="Reiniciar">↻</button>
+      <div class="hud-btns">
+        <button id="btn-home" class="hud-menu" title="Menú principal">🏠</button>
+        <button id="btn-menu" class="hud-menu" title="Reiniciar">↻</button>
+      </div>
       <div class="hud-perfil">
         <div class="hud-avatar">${rivas(40)}</div>
         <div class="hud-nivel">
@@ -613,6 +623,7 @@ window.CAPITULO_C = {
         <div class="hud-score-txt"><b id="score-num">${v}</b><small>Seguridad</small></div>
       </div>`;
     document.getElementById("btn-menu").onclick = reiniciar;
+    document.getElementById("btn-home").onclick = () => { if (simTimer) { clearInterval(simTimer); simTimer = null; } if (onHome) onHome(); };
   }
   function ganar(indDelta, xpDelta) {
     estado.indicador = clamp(estado.indicador + (indDelta || 0));
@@ -915,8 +926,9 @@ window.CAPITULO_C = {
         ${bloqueDialogo(nodo.persona, nodo.dialogo)}
       </div>`, "con-escena") +
       `<button class="btn primario" id="reiniciar-final">Volver a jugar</button>
-       <div class="prox">🔒 Próximamente · Capítulo D — «Verificación en terreno y respuesta» (Pasos 7–9)</div>`;
+       <button class="btn" id="volver-menu">Volver al menú principal</button>`;
     document.getElementById("reiniciar-final").onclick = reiniciarDirecto;
+    document.getElementById("volver-menu").onclick = () => { if (onHome) onHome(); };
     if (!reduce) confeti();
   }
 
@@ -956,6 +968,10 @@ window.CAPITULO_C = {
   }
 
   render();
-})();
+}
+window.MotorC = { iniciar: iniciarMotorC };
 
 </script>
+  <script>iniciarMotorC();</script>
+</body>
+</html>

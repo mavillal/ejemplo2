@@ -3,7 +3,7 @@
  * Tipos de nodo: portada | escena | sorteo | filtro | codigo | teclado | final
  * Comparte el lenguaje visual del Capítulo A (avatar de Rivas, HUD, confeti).
  */
-(function () {
+function iniciarMotorB(onHome) {
   "use strict";
 
   const cap = window.CAPITULO_B;
@@ -120,7 +120,10 @@
     const nv = nivel(estado.xp), xpEn = estado.xp % 100;
     const cod = [1, 2, 3].map((c) => estado.digitos[c] || "·").join(" ");
     hud.innerHTML = `
-      <button id="btn-menu" class="hud-menu" title="Reiniciar">↻</button>
+      <div class="hud-btns">
+        <button id="btn-home" class="hud-menu" title="Menú principal">🏠</button>
+        <button id="btn-menu" class="hud-menu" title="Reiniciar">↻</button>
+      </div>
       <div class="hud-perfil">
         <div class="hud-avatar">${rivas(40)}</div>
         <div class="hud-nivel">
@@ -133,6 +136,7 @@
         <div class="hud-score-txt"><b id="score-num">${v}</b><small>Seguridad</small></div>
       </div>`;
     document.getElementById("btn-menu").onclick = reiniciar;
+    document.getElementById("btn-home").onclick = () => { if (onHome) onHome(); };
   }
   function ganar(indDelta, xpDelta) {
     estado.indicador = clamp(estado.indicador + (indDelta || 0));
@@ -422,8 +426,9 @@
         ${bloqueDialogo(nodo.persona, nodo.dialogo)}
       </div>`, "con-escena") +
       `<button class="btn primario" id="reiniciar-final">Volver a jugar</button>
-       <div class="prox">🔒 Próximamente · Capítulo C — «Estándares de desempeño y dueños»</div>`;
+       <button class="btn" id="volver-menu">Volver al menú principal</button>`;
     document.getElementById("reiniciar-final").onclick = reiniciarDirecto;
+    document.getElementById("volver-menu").onclick = () => { if (onHome) onHome(); };
     if (!reduce) confeti();
   }
 
@@ -465,4 +470,5 @@
   }
 
   render();
-})();
+}
+window.MotorB = { iniciar: iniciarMotorB };

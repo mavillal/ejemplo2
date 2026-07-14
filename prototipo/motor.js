@@ -3,7 +3,7 @@
  * Independiente del contenido: interpreta window.CAPITULO_A.
  * Toda la gráfica es SVG incrustado (nítido, liviano, sin recursos externos).
  */
-(function () {
+function iniciarMotorA(onHome) {
   "use strict";
 
   const cap = window.CAPITULO_A;
@@ -248,7 +248,10 @@
     const nv = nivel(estado.xp);
     const xpEn = estado.xp % 100;
     hud.innerHTML = `
-      <button id="btn-menu" class="hud-menu" title="Reiniciar">↻</button>
+      <div class="hud-btns">
+        <button id="btn-home" class="hud-menu" title="Menú principal">🏠</button>
+        <button id="btn-menu" class="hud-menu" title="Reiniciar">↻</button>
+      </div>
       <div class="hud-perfil">
         <div class="hud-avatar">${rivas(40)}</div>
         <div class="hud-nivel">
@@ -261,6 +264,7 @@
         <div class="hud-score-txt"><b id="score-num">${v}</b><small>Seguridad</small></div>
       </div>`;
     document.getElementById("btn-menu").onclick = reiniciar;
+    document.getElementById("btn-home").onclick = () => { if (onHome) onHome(); };
     if (anim && !reduce) requestAnimationFrame(() => {
       const f = hud.querySelector(".hud-xpfill"); if (f) f.style.width = xpEn + "%";
     });
@@ -518,9 +522,10 @@
         ${bloqueDialogo(nodo.persona, nodo.dialogo)}
       </div>`, "con-escena") +
       `<button class="btn primario" id="reiniciar-final">${variante === "fallo" ? "Reintentar el capítulo" : "Volver a jugar"}</button>
-       ${variante === "fallo" ? "" : `<div class="prox">🔒 Próximamente · Capítulo B — «Del bowtie al control crítico»</div>`}`;
+       <button class="btn" id="volver-menu">Volver al menú principal</button>`;
     // Reinicio directo y garantizado (sin confirm() nativo, que el hosting bloquea).
     document.getElementById("reiniciar-final").onclick = reiniciarDirecto;
+    document.getElementById("volver-menu").onclick = () => { if (onHome) onHome(); };
     if (celebra && !reduce) confeti();
   }
 
@@ -574,4 +579,5 @@
   }
 
   render();
-})();
+}
+window.MotorA = { iniciar: iniciarMotorA };

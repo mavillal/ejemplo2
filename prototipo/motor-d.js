@@ -4,7 +4,7 @@
  * Cada inspección: observar (hotspots) -> veredicto -> respuesta.
  * Comparte el lenguaje visual de los capítulos anteriores.
  */
-(function () {
+function iniciarMotorD(onHome) {
   "use strict";
 
   const cap = window.CAPITULO_D;
@@ -113,7 +113,10 @@
   function pintarHUD() {
     const v = clamp(estado.indicador), nv = nivel(estado.xp), xpEn = estado.xp % 100;
     hud.innerHTML = `
-      <button id="btn-menu" class="hud-menu" title="Reiniciar">↻</button>
+      <div class="hud-btns">
+        <button id="btn-home" class="hud-menu" title="Menú principal">🏠</button>
+        <button id="btn-menu" class="hud-menu" title="Reiniciar">↻</button>
+      </div>
       <div class="hud-perfil">
         <div class="hud-avatar">${rivas(40)}</div>
         <div class="hud-nivel">
@@ -126,6 +129,7 @@
         <div class="hud-score-txt"><b id="score-num">${v}</b><small>Seguridad</small></div>
       </div>`;
     document.getElementById("btn-menu").onclick = reiniciar;
+    document.getElementById("btn-home").onclick = () => { if (onHome) onHome(); };
   }
   function ganar(indDelta, xpDelta) {
     estado.indicador = clamp(estado.indicador + (indDelta || 0));
@@ -331,8 +335,10 @@
         ${bloqueDialogo(nodo.persona, nodo.dialogo)}
       </div>`, "con-escena") +
       `<button class="btn primario" id="reiniciar-final">Volver a jugar</button>
+       <button class="btn" id="volver-menu">Volver al menú principal</button>
        <div class="prox">🎓 Has completado el arco de los 9 pasos CCM (Capítulos A–D)</div>`;
     document.getElementById("reiniciar-final").onclick = reiniciarDirecto;
+    document.getElementById("volver-menu").onclick = () => { if (onHome) onHome(); };
     if (!reduce) confeti();
   }
 
@@ -372,4 +378,5 @@
   }
 
   render();
-})();
+}
+window.MotorD = { iniciar: iniciarMotorD };

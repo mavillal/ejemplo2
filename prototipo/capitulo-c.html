@@ -57,11 +57,12 @@
     backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4);
     border-bottom: 1px solid rgba(120,150,220,.12);
   }
+  .hud-btns { order: 3; display: flex; gap: 6px; }
   .hud-menu {
-    order: 3; width: 34px; height: 34px; flex: none; border-radius: 11px; cursor: pointer;
+    width: 34px; height: 34px; flex: none; border-radius: 11px; cursor: pointer;
     background: var(--panel2); border: 1px solid var(--border); color: var(--muted); font-size: 16px;
   }
-  .hud-menu:active { transform: rotate(-90deg); }
+  .hud-menu:active { transform: scale(.88); }
   .hud-perfil { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
   .hud-avatar { width: 40px; height: 40px; border-radius: 50%; flex: none; overflow: hidden;
     border: 2px solid var(--amber); box-shadow: 0 0 14px rgba(255,138,61,.4); }
@@ -337,5 +338,6 @@
   </div>
   <script src="capitulo-c.contenido.js"></script>
   <script src="motor-c.js"></script>
+  <script>iniciarMotorC();</script>
 </body>
 </html>
